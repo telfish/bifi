@@ -21,7 +21,12 @@ trait BitField extends (Long => Boolean) {
   /**
    * Check if bit at position `index` is set.
    */
-  def apply(index: Long): Boolean
+  def isSet(index: Long): Boolean
+
+  /**
+   * An alias for [[apply]]
+   */
+  def apply(index: Long): Boolean = isSet(index)
 
   /**
    * Get the number of set bits in this field.
