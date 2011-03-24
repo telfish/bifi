@@ -48,4 +48,6 @@ trait BitField extends (Long => Boolean) {
 
 object BitField {
   def empty: BitField = HashBitField.empty
+  def apply(bit0: Long, otherBits: Long*): BitField = apply(bit0 +: otherBits)
+  def apply(setBits: Traversable[Long]): BitField = setBits.foldLeft(empty)(_ set _)
 }
