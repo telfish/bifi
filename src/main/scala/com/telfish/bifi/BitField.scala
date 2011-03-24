@@ -45,3 +45,7 @@ trait BitField extends (Long => Boolean) {
   def overlaps(other: BitField): Boolean =
     this.cardinality + other.cardinality == (this | other).cardinality
 }
+
+object BitField {
+  def empty: BitField = HashBitField.empty
+}
