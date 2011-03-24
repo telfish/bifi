@@ -3,3 +3,5 @@ target
 boot
 *.iml
 /.idea
+lib_managed
+src_managed
