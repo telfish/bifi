@@ -47,7 +47,7 @@ object LongRangeMapSpecs extends Specification with ScalaCheck with BetterScalaC
             .add(102, 110, "test2")
             .toLongRangeMap
 
-        map.gaps must be_==(List((0, 50), (100, 102)))
+        map.gaps(120) must be_==(List((0, 50), (100, 102), (110, 120)))
       }
     }
 

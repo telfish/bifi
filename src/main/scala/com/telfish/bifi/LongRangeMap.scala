@@ -13,8 +13,14 @@ trait LongRangeMap[+A] {
    */
   def get(l: Long): Option[A]
 
-  def gaps: List[(Long,  Long)]
+  /**
+   * Find all gaps in the definition space between 0 and end
+   */
+  def gaps(end: Long): List[(Long,  Long)]
 
+  /**
+   * Find all double definitions in the definition space.
+   */
   def overlaps: List[(Long, Long, List[A])]
 }
 
@@ -59,20 +65,21 @@ class LongRangeMapBuilder[A: ClassManifest] {
       def get(l: Long): Option[A] =
         indexAt(l).map(values)
 
-      def gaps: List[(Long, Long)] = {
+      def gaps(end: Long): List[(Long, Long)] = {
         val buffer = new ListBuffer[(Long, Long)]
 
         var i = -1
 
-        while (i + 1 < size) {
+        while (i < size) {
           val thisEnd = if (i >= 0) starts(i) + lengths(i) else 0L
-          val nextStart = starts(i + 1)
+          val nextStart = if (i + 1 < size) starts(i + 1) else end
 
           if (thisEnd < nextStart)
             buffer += ((thisEnd, nextStart))
 
           i += 1
         }
+
         buffer.toList
       }
       def overlaps: List[(Long, Long, List[A])] = {
