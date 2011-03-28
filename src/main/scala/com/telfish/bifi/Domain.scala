@@ -11,8 +11,6 @@ trait Domain[T] { outer =>
   def indexOf(t: T): Long
   def elementAt(pos: Long): T
 
-  def range(start: T, end: T): List[(Long, Long)] = List((indexOf(start), indexOf(end) + 1))
-
   def values: Seq[T] = new IndexedSeq[T] {
     def apply(idx: Int): T = elementAt(idx.toLong)
     def length: Int = Domain.this.size.toInt
@@ -22,33 +20,55 @@ trait Domain[T] { outer =>
     def elementAt(pos: Long): U = f(outer.elementAt(pos))
     def indexOf(t: U): Long = outer.indexOf(fInv(t))
     def size: Long = Domain.this.size
-    override def range(start: U, end: U) = outer.range(fInv(start), fInv(end))
   }
 }
 
+trait RangeDomain[T, R] extends Domain[T] {
+  def range(expr: R): List[(Long, Long)]
+
+  def ×[T2, R2](other: RangeDomain[T2, R2]): DomainProduct[T, T2, R, R2] = new DomainProduct(this, other)
+}
+
+trait RangeExpr[T]
+case class Range[T](from: T, to: T) extends RangeExpr[T]
+case class Single[T](point: T) extends RangeExpr[T]
+
+object RangeExpr {
+  def range[T](from: T, to: T): RangeExpr[T] = Range(from, to)
+  def single[T](t: T): RangeExpr[T] = Single(t)
+
+  def rangeByExpr[R](expr: RangeExpr[R], domain: Domain[R]) = List(expr match {
+    case Single(t) =>
+      val index = domain.indexOf(t)
+      (index, index + 1)
+    case Range(from, to) =>
+      (domain.indexOf(from), domain.indexOf(to) + 1)
+  })
+}
+
+case class DomainProduct[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomain[T2, R2]) extends RangeDomain[(T1, T2), (R1, R2)] { outer =>
+  def elementAt(pos: Long): (T1, T2) = {
+    val i1 = pos / d2.size
+    val i2 = pos % d2.size
+
+    (d1.elementAt(i1), d2.elementAt(i2))
+  }
+
+  def indexOf(t: (T1, T2)): Long = d1.indexOf(t._1) * d2.size + d2.indexOf(t._2)
+
+  def size: Long = d1.size * d2.size
+
+  def range(expr: (R1, R2)): List[(Long, Long)] =
+    for { (start1, end1) <- d1.range(expr._1)
+          i1             <- start1 until end1
+          (start2, end2) <- d2.range(expr._2)
+        }
+      yield (i1 * d2.size + start2, i1 * d2.size + end2)
+}
+
 object Domain {
-  implicit def tupled2Domain[T1, T2](implicit d1: Domain[T1], d2: Domain[T2]): Domain[(T1, T2)] =
-    new Domain[(T1, T2)] {
-      def elementAt(pos: Long): (T1, T2) = {
-        val i1 = pos / d2.size
-        val i2 = pos % d2.size
-
-        (d1.elementAt(i1), d2.elementAt(i2))
-      }
-
-      def indexOf(t: (T1, T2)): Long = d1.indexOf(t._1) * d2.size + d2.indexOf(t._2)
-
-      def size: Long = d1.size * d2.size
-
-      override def range(start: (T1, T2), end: (T1, T2)): List[(Long, Long)] =
-        (d1.indexOf(start._1) to d1.indexOf(end._1))
-          .map(d1.elementAt)
-          .flatMap(t1 => d2.range(start._2, end._2) map { case (s, e) => (indexOf((t1, d2.elementAt(s))), indexOf((t1, d2.elementAt(e)))) } )
-          .toList
-    }
-
-  implicit def tupled3Domain[T1, T2, T3](d1: Domain[T1], d2: Domain[T2], d3: Domain[T3]): Domain[(T1, T2, T3)] =
-    tupled2Domain(d1, tupled2Domain(d2, d3)).map({ case (a, (b, c)) => (a, b, c) }, { case (a, b, c) => (a, (b, c)) })
+  //implicit def tupled3Domain[T1, T2, T3](d1: Domain[T1], d2: Domain[T2], d3: Domain[T3]): Domain[(T1, T2, T3)] =
+//    tupled2Domain(d1, tupled2Domain(d2, d3)).map({ case (a, (b, c)) => (a, b, c) }, { case (a, b, c) => (a, (b, c)) })
     /* faster direct version:
 
     new Domain[(T1, T2, T3)] {
