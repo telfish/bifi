@@ -13,12 +13,9 @@ trait LongRangeMap[+A] {
    */
   def get(l: Long): Option[A]
 
-  /**
-   * Reports the list of gaps between start and end.
-   */
-  def gaps(start: Long, end: Long): List[(Long,  Long)]
+  def gaps: List[(Long,  Long)]
 
-  def overlaps(from: Long, to: Long): List[(Long, Long, List[A])]
+  def overlaps: List[(Long, Long, List[A])]
 }
 
 class LongRangeMapBuilder[A: ClassManifest] {
@@ -26,6 +23,8 @@ class LongRangeMapBuilder[A: ClassManifest] {
   var entries = new TreeSet[Entry]()(Ordering.by((_: Entry)._1))
 
   def add(from: Long, to: Long, value: A): this.type = {
+    assert(from < to)
+
     entries += ((from, to - from, value))
     this
   }
@@ -60,28 +59,41 @@ class LongRangeMapBuilder[A: ClassManifest] {
       def get(l: Long): Option[A] =
         indexAt(l).map(values)
 
-      def gaps(start: Long, end: Long): List[(Long, Long)] = {
-        indexAt(start) match {
-          case Some(st) =>
-            val buffer = new ListBuffer[(Long, Long)]
+      def gaps: List[(Long, Long)] = {
+        val buffer = new ListBuffer[(Long, Long)]
 
-            var i = st
-            var pos = start
-            while (pos < end) {
-              val thisEnd = starts(i) + lengths(i)
-              val nextStart = if (i + 1 < size) starts(i + 1) else end
+        var i = -1
 
-              if (thisEnd < nextStart)
-                buffer += ((math.max(start, thisEnd), math.min(end, nextStart)))
+        while (i + 1 < size) {
+          val thisEnd = if (i >= 0) starts(i) + lengths(i) else 0L
+          val nextStart = starts(i + 1)
 
-              pos = nextStart
-              i += 1
-            }
-            buffer.toList
-          case None => (start, starts(0)) :: gaps(starts(0), end)
+          if (thisEnd < nextStart)
+            buffer += ((thisEnd, nextStart))
+
+          i += 1
         }
+        buffer.toList
       }
-      def overlaps(from: Long, to: Long): List[(Long, Long, List[A])] = null
+      def overlaps: List[(Long, Long, List[A])] = {
+        val buffer = new ListBuffer[(Long, Long, List[A])]
+
+        var i = 0
+
+        while (i + 1 < size) {
+          val thisEnd = starts(i) + lengths(i)
+
+          val nextStart = starts.indexWhere(_ >= thisEnd, i + 1)
+          val endIndex = if (nextStart == -1) size else nextStart
+
+          if (endIndex > i + 1) {
+            buffer += ((starts(i + 1), thisEnd, (i until endIndex) map values toList))
+          }
+
+          i += 1
+        }
+        buffer.toList
+      }
     }
   }
 }
