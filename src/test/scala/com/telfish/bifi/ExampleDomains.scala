@@ -8,6 +8,8 @@ trait ExampleDomains {
     def indexOf(t: Char): Long = t - 'a'
 
     def range(expr: RangeExpr[Char]): List[(Long, Long)] = RangeExpr.rangeByExpr[Char](expr, this)
+
+    def rangeify(range: (Long, Long)): RangeExpr[Char] = RangeExpr.exprByRange(range, this)
   }
 
   val domainA = SimpleDomain(2)

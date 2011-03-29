@@ -28,6 +28,8 @@ trait RangeDomain[T, R] extends Domain[T] {
 
   def range(expr: R): List[(Long, Long)]
 
+  def rangeify(range: (Long, Long)): R
+
   def ×[T2, R2](other: RangeDomain[T2, R2]): DomainProduct[T, T2, R, R2] = new DomainProduct(this, other)
 }
 
@@ -41,7 +43,7 @@ object RangeExpr {
   def single[T](t: T): RangeExpr[T] = Single(t)
   def all = All
 
-  def rangeByExpr[R](expr: RangeExpr[R], domain: Domain[R]): List[(Long, Long)] = List(expr match {
+  def rangeByExpr[T](expr: RangeExpr[T], domain: Domain[T]): List[(Long, Long)] = List(expr match {
     case Single(t) =>
       val index = domain.indexOf(t)
       (index, index + 1)
@@ -50,6 +52,8 @@ object RangeExpr {
     case All =>
       (0L, domain.size)
   })
+
+  def exprByRange[T](range: (Long, Long), domain: Domain[T]): RangeExpr[T] = null
 }
 
 case class DomainProduct[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomain[T2, R2]) extends RangeDomain[(T1, T2), (R1, R2)] { outer =>
@@ -70,6 +74,8 @@ case class DomainProduct[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomai
           (start2, end2) <- d2.range(expr._2)
         }
       yield (i1 * d2.size + start2, i1 * d2.size + end2)
+
+  def rangeify(range: (Long, Long)): (R1, R2) = null
 }
 
 object Domain {

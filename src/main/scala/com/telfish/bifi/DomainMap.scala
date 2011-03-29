@@ -36,8 +36,11 @@ class DomainMapBuilder[T, R, A: ClassManifest](val domain: RangeDomain[T, R]) { 
       def domain: RangeDomain[T, R] = builder.domain
       def underlyingIndexMap: LongRangeMap[A] = theMap
 
-      def gaps: List[R] = null
-      def overlaps: List[(R, List[A])] = null
+      def gaps: List[R] =
+        theMap.gaps(domain.size) map domain.rangeify
+
+      def overlaps: List[(R, List[A])] =
+        theMap.overlaps map { case (s, e, values) => (domain.rangeify(s, e), values)}
 
       def get(l: T): Option[A] = theMap.get(domain.indexOf(l))
     }
