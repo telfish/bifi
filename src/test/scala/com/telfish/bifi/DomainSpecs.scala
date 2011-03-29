@@ -1,30 +1,9 @@
 package com.telfish.bifi
 
 import org.specs.{ScalaCheck, Specification}
-import org.scalacheck.{Gen, Arbitrary}
-import org.specs.specification.Example
+import org.scalacheck.Gen
 
-object DomainSpecs extends Specification with ScalaCheck /*with BetterScalaCheckVerifies*/ {
-  case class SimpleDomain(size: Long) extends RangeDomain[Char, RangeExpr[Char]] {
-    def elementAt(pos: Long): Char = ('a' + pos).toChar
-    def indexOf(t: Char): Long = t - 'a'
-
-    def range(expr: RangeExpr[Char]): List[(Long, Long)] = RangeExpr.rangeByExpr[Char](expr, this)
-  }
-
-  case class Value[T, D <: Domain[T]](get: T)
-  def arbitraryValue[T](implicit d: Domain[T]): Arbitrary[Value[d.Value, d.type]] =
-    Arbitrary(Gen.oneOf(d.values).map(Value.apply _))
-
-  val a = 'a'
-  val b = 'b'
-  val c = 'c'
-  val d = 'd'
-
-  val domainA = SimpleDomain(2)
-  val domainB = SimpleDomain(3)
-  val domainC = SimpleDomain(4)
-
+object DomainSpecs extends Specification with ScalaCheck /*with BetterScalaCheckVerifies*/ with ExampleDomains {
   "Domains" should {
     "properly span up a 2-dim space" in {
       val myDomain = domainA × domainB
