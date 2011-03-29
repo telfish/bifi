@@ -51,9 +51,17 @@ object DomainSpecs extends Specification with ScalaCheck /*with BetterScalaCheck
 
       "calculate proper ranges" in {
         import RangeExpr.{range => r, _}
-        val range = myDomain.range(((r(a, b), r(a, b)), r(a, b)))
 
-        range must be_==(List((0, 2), (4, 6), (12, 14), (16, 18)))
+        "for ranges" in {
+          val range = myDomain.range(((r(a, b), r(a, b)), r(a, b)))
+
+          range must be_==(List((0, 2), (4, 6), (12, 14), (16, 18)))
+        }
+        "for complete domains" in {
+          val range = myDomain.range(((all, r(a, b)), all))
+
+          range must be_==(List((0, 4), (4, 8), (12, 16), (16, 20)))
+        }
       }
     }
   }

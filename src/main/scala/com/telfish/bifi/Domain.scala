@@ -24,25 +24,31 @@ trait Domain[T] { outer =>
 }
 
 trait RangeDomain[T, R] extends Domain[T] {
+  type RangeT = R
+
   def range(expr: R): List[(Long, Long)]
 
   def ×[T2, R2](other: RangeDomain[T2, R2]): DomainProduct[T, T2, R, R2] = new DomainProduct(this, other)
 }
 
-trait RangeExpr[T]
+trait RangeExpr[+T]
 case class Range[T](from: T, to: T) extends RangeExpr[T]
 case class Single[T](point: T) extends RangeExpr[T]
+case object All extends RangeExpr[Nothing]
 
 object RangeExpr {
   def range[T](from: T, to: T): RangeExpr[T] = Range(from, to)
   def single[T](t: T): RangeExpr[T] = Single(t)
+  def all = All
 
-  def rangeByExpr[R](expr: RangeExpr[R], domain: Domain[R]) = List(expr match {
+  def rangeByExpr[R](expr: RangeExpr[R], domain: Domain[R]): List[(Long, Long)] = List(expr match {
     case Single(t) =>
       val index = domain.indexOf(t)
       (index, index + 1)
     case Range(from, to) =>
       (domain.indexOf(from), domain.indexOf(to) + 1)
+    case All =>
+      (0L, domain.size)
   })
 }
 
