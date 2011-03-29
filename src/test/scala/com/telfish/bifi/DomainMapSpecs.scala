@@ -11,14 +11,14 @@ object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains 
         "manual test" in {
           val map = Builder[String].add(((single(a), single(b)), single(a)), "test").toDomainMap
 
-          map.get(((a, a), b)) must beSome("test")
+          map.get(((a, b), a)) must beSome("test")
         }
 
         implicit val arb = arbitraryValue(theDomain)
         "get the mapping" verifies { (a: Value[theDomain.Value, theDomain.type]) =>
           val map = Builder[String].addSingle(a.get, "test").toDomainMap
 
-          map.get(a.get) == "test"
+          map.get(a.get) == Some("test")
         }
       }
     }
@@ -70,5 +70,5 @@ object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains 
     }
   }
 
-  def Builder[A]: DomainMapBuilder[theDomain.Value, theDomain.RangeT, A] = null
+  def Builder[A: ClassManifest]: DomainMapBuilder[theDomain.Value, theDomain.RangeT, A] = new DomainMapBuilder(theDomain)
 }
