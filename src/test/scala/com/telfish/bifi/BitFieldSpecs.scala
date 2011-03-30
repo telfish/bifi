@@ -9,7 +9,7 @@ import org.scalacheck._
 import Prop._
 
 @RunWith(classOf[JUnitSuiteRunner])
-class BitFieldSpecsJUnit extends JUnit4(BitFieldSpecs)
+class BitFieldSpecsJUnit extends JUnit4(BitFieldSpecs, DomainSpecs, LongRangeMapSpecs, DomainMapSpecs)
 
 object BitFieldSpecs extends Specification("BitField") with ScalaCheck {
   "set bits must be set" verifies { (a: Long) =>
