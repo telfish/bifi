@@ -53,7 +53,12 @@ object RangeExpr {
       (0L, domain.size)
   })
 
-  def exprByRange[T](range: (Long, Long), domain: Domain[T]): RangeExpr[T] = null
+  def exprByRange[T](range: (Long, Long), domain: Domain[T]): RangeExpr[T] = range match {
+    case (a, b) if a + 1 == b       => Single(domain.elementAt(a))
+    case (0, x) if x == domain.size => All
+    case (a, b) if a < b            => Range(domain.elementAt(a), domain.elementAt(b - 1))
+    case (a, b)                     => throw new IllegalStateException("invalid range: "+a+" - "+b)
+  }
 }
 
 case class DomainProduct[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomain[T2, R2]) extends RangeDomain[(T1, T2), (R1, R2)] { outer =>
