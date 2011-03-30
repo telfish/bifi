@@ -11,6 +11,9 @@ trait Domain[T] { outer =>
   def indexOf(t: T): Long
   def elementAt(pos: Long): T
 
+  def indexRange(start: T, end: T): (Long, Long) =
+    (indexOf(start), indexOf(end) + 1)
+
   def values: Seq[T] = new IndexedSeq[T] {
     def apply(idx: Int): T = elementAt(idx.toLong)
     def length: Int = Domain.this.size.toInt
@@ -28,7 +31,12 @@ trait RangeDomain[T, R] extends Domain[T] {
 
   def range(expr: R): List[(Long, Long)]
 
-  def rangeify(range: (Long, Long)): R
+  def rangeify(range: (Long, Long)): List[R]
+
+  def valuesInRange(expr: R): Traversable[T] = range(expr).flatMap {
+    case (start, end) => (start until end) map elementAt
+  }
+  def single(t: T): R = rangeify(indexRange(t, t)).head
 
   def ×[T2, R2](other: RangeDomain[T2, R2]): DomainProduct[T, T2, R, R2] = new DomainProduct(this, other)
 }
@@ -80,7 +88,33 @@ case class DomainProduct[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomai
         }
       yield (i1 * d2.size + start2, i1 * d2.size + end2)
 
-  def rangeify(range: (Long, Long)): (R1, R2) = null
+  def rangeify(range: (Long, Long)): List[(R1, R2)] = {
+    val (start1, start2) = elementAt(range._1)
+    val (end1  , end2)   = elementAt(range._2 - 1)
+
+    val d1Ranges = d1.rangeify(d1.indexRange(start1, end1))
+    val d2Range@(startIndex2, endIndex2) = d2.indexRange(start2, end2)
+
+    if (start1 == end1 || (startIndex2 == 0 && endIndex2 == d2.size)) {
+      val List(e2) = d2.rangeify(d2Range)
+
+      d1Ranges map { e1 => (e1, e2) }
+    } else {
+      d1Ranges flatMap { r1 =>
+        d1.valuesInRange(r1) flatMap { v1 =>
+          val start = d1.indexOf(v1) * d2.size
+          val end   = start + d2.size
+          def e(end: Long): Long = if (end == 0) d2.size else end
+          val r     = (math.max(start, range._1) % d2.size,
+                       e(math.min(end  , range._2) % d2.size))
+
+          d2.rangeify(r) map {
+            r2 => (d1.single(v1), r2)
+          }
+        }
+      }
+    }
+  }
 }
 
 object Domain {

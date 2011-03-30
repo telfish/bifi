@@ -3,26 +3,24 @@ package com.telfish.bifi
 import org.specs.{ScalaCheck, Specification}
 import org.scalacheck.{Prop, Gen}
 import org.specs.specification.{Example, PendingUntilFixed}
+import com.telfish.bifi.RangeExpr._
 
 object DomainSpecs extends Specification with ScalaCheck with ExampleDomains with PendingUntilFixed {
+  noDetailedDiffs()
+
   "Domains" should {
     "rangeify index ranges" in {
       import RangeExpr.{range => r, _}
 
       "all" in {
-        domainC.rangeify(0, 4) must be_==(all)
+        domainC.rangeify(0, 4) must be_==(List(all))
       }
       "range" in {
-        domainC.rangeify(1, 3) must be_==(r(b, c))
+        domainC.rangeify(1, 3) must be_==(List(r(b, c)))
       }
       "single" in {
-        domainC.rangeify(1, 2) must be_==(single(b))
+        domainC.rangeify(1, 2) must be_==(List(single(b)))
       }
-      "multiple" in {
-
-      } pendingUntilFixed
-
-      null: Example
     }
 
     "properly span up a 2-dim space" in {
@@ -39,11 +37,33 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
         myDomain.elementAt(5) must be_==((b, c))
       }
 
-      "calculate proper ranges" in {
+      "calculate proper ranges indices" in {
         import RangeExpr.{range => r, _}
         val range = myDomain.range((r(a, b), single(a)))
 
         range must be_==(List((0, 1), (3, 4)))
+      }
+
+      "calculate proper range expr from range indices" in {
+        "for ranges spanning branches at some level" in {
+          "starting at the end of one branch" in {
+            val expr = myDomain.rangeify((2, 5))
+
+            expr must be_==(List(
+              (single(a), single(c)),
+              (single(b), range(a, b))
+            ))
+          }
+
+          "starting at the start of one branch" in {
+            val expr = myDomain.rangeify((0, 4))
+
+            expr must be_==(List(
+              (single(a), all),
+              (single(b), single(a))
+            ))
+          }
+        }
       }
     }
     "properly span up a 3-dim space" in {
@@ -90,13 +110,13 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
         "for all" in {
           val expr = myDomain.rangeify((0, 24))
 
-          expr must be_==(((all, all), all))
+          expr must be_==(List(((all, all), all)))
         }
 
         "for parts" in {
           val expr = myDomain.rangeify((9, 12))
 
-          expr must be_==(((single(a), single(c)), r(b, d)))
+          expr must be_==(List(((single(a), single(c)), r(b, d))))
         }
 
         import Prop._
@@ -104,7 +124,11 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
 
         "for arbitrary index ranges (roundtrip)" in {
           val roundTrip = Prop.forAll(validIndex, validIndex) { (start: Long, end: Long) =>
-            (end > start) ==> (myDomain.range(myDomain.rangeify(start, end)) == List((start, end)))
+            (end > start) ==> {
+              val rs = myDomain.rangeify(start, end)
+              (rs.size == 1) :| "only one range must be found" &&
+                (myDomain.range(rs.head) == List((start, end))) :| "the correct range must be found"
+            }
           }
           roundTrip must pass
         }

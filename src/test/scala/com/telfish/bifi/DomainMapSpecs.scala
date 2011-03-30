@@ -1,8 +1,10 @@
 package com.telfish.bifi
 
 import org.specs.{ScalaCheck, Specification}
+import org.specs.specification.PendingUntilFixed
 
-object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains {
+object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains with PendingUntilFixed {
+  noDetailedDiffs()
   import RangeExpr._
 
   "A DomainMap" should {
@@ -28,7 +30,7 @@ object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains 
       "if only single is set" in {
         val map = Builder[String].add(((single(a), single(b)), single(a)), "test").toDomainMap
 
-        map.gaps must be_==(List(
+        map.gaps must containAll(List(
           ((single(a), single(b)), range(b, d)),
           ((single(a), single(a)), all),
           ((single(a), single(c)), all),
@@ -43,7 +45,16 @@ object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains 
             .add(((all, single(c)), range(a, b)), "test2")
             .toDomainMap
 
-        map.gaps must be_==(List(((all, single(c)), range(c, d))))
+        "simple" in {
+          map.gaps must be_==(List(
+            ((single(a), single(c)), range(c, d)),
+            ((single(b), single(c)), range(c, d))
+          ))
+        }
+
+        "joined" in {
+          map.gaps must be_==(List(((all, single(c)), range(c, d))))
+        } pendingUntilFixed("one of 'joined' or 'simple' cannot succeed, for now unification has not been implemented")
       }
     }
     "report overlaps" in {
@@ -54,7 +65,7 @@ object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains 
             .add(((single(b), all), range(c, d)), "test2")
             .toDomainMap
 
-        map.overlaps must be_==(List((((single(b), single(c)), single(d)), List("test", "test2"))))
+        map.overlaps must be_==(List((((single(b), single(c)), single(d)), List("test2", "test"))))
       }
 
       "multiple overlaps" in {
@@ -62,10 +73,13 @@ object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains 
           Builder[String]
             .addSingle(((b, c), d), "test")
             .add(((single(b), all), range(c, d)), "test2")
-            .add(((all, single(c)), all), "test3")
+            .add(((all, single(c)), all), "tester")
             .toDomainMap
 
-        map.overlaps must be_==(List((((single(b), single(c)), single(d)), List("test", "test2", "test3"))))
+        map.overlaps must containAll(List(
+          (((single(b), single(c)), single(c)), List("tester", "test2")),
+          (((single(b), single(c)), single(d)), List("tester", "test2", "test"))
+        ))
       }
     }
   }

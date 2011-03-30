@@ -9,7 +9,7 @@ trait ExampleDomains {
 
     def range(expr: RangeExpr[Char]): List[(Long, Long)] = RangeExpr.rangeByExpr[Char](expr, this)
 
-    def rangeify(range: (Long, Long)): RangeExpr[Char] = RangeExpr.exprByRange(range, this)
+    def rangeify(range: (Long, Long)): List[RangeExpr[Char]] = List(RangeExpr.exprByRange(range, this))
 
     type V = ExampleDomains#Value[Char, this.type]
   }
