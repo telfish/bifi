@@ -4,7 +4,7 @@ import org.specs.{ScalaCheck, Specification}
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import Prop._
 
-object LongRangeMapSpecs extends Specification with ScalaCheck with BetterScalaCheckVerifies {
+object LongRangeMapSpecs extends Specification with ScalaCheck {
   noDetailedDiffs()
 
   "LongRangeMap" should {

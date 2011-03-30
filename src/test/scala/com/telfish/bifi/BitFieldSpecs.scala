@@ -11,7 +11,7 @@ import Prop._
 @RunWith(classOf[JUnitSuiteRunner])
 class BitFieldSpecsJUnit extends JUnit4(BitFieldSpecs)
 
-object BitFieldSpecs extends Specification("BitField") with ScalaCheck with BetterScalaCheckVerifies {
+object BitFieldSpecs extends Specification("BitField") with ScalaCheck {
   "set bits must be set" verifies { (a: Long) =>
     BitField(a).isSet(a)
   }

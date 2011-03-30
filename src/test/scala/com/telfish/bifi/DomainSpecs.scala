@@ -4,7 +4,7 @@ import org.specs.{ScalaCheck, Specification}
 import org.scalacheck.{Prop, Gen}
 import org.specs.specification.{Example, PendingUntilFixed}
 
-object DomainSpecs extends Specification with ScalaCheck /*with BetterScalaCheckVerifies*/ with ExampleDomains with PendingUntilFixed {
+object DomainSpecs extends Specification with ScalaCheck with ExampleDomains with PendingUntilFixed {
   "Domains" should {
     "rangeify index ranges" in {
       import RangeExpr.{range => r, _}
