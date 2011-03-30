@@ -44,6 +44,11 @@ class LongRangeMapBuilder[A: ClassManifest] {
     val values = sorted.view.map(_._3).toArray
     val size = sorted.size
 
+    val ends = new IndexedSeq[Long] {
+      def length: Int = size
+      def apply(idx: Int): Long = starts(idx) + lengths(idx)
+    }
+
     new LongRangeMap[A] {
       def indexAt(l: Long): Option[Int] = {
         val index = Arrays.binarySearch(starts, l)
@@ -88,16 +93,31 @@ class LongRangeMapBuilder[A: ClassManifest] {
         var i = 0
 
         while (i + 1 < size) {
-          val thisEnd = starts(i) + lengths(i)
+          val thisEnd = ends(i)
 
           val nextStart = starts.indexWhere(_ >= thisEnd, i + 1)
           val endIndex = if (nextStart == -1) size else nextStart
 
           if (endIndex > i + 1) {
-            buffer += ((starts(i + 1), thisEnd, (i until endIndex) map values toList))
+            var curEnd = starts(i)
+
+            while (curEnd < thisEnd) {
+              val overlappingIdxs = ((i+1) until endIndex) filterNot (idx => ends(idx) <= curEnd)
+
+              if (overlappingIdxs.nonEmpty) {
+                val maxStart = math.max(curEnd,  overlappingIdxs.map(starts).min)
+                val minEnd   = math.min(thisEnd, overlappingIdxs.map(ends).min)
+
+                buffer += ((maxStart, minEnd, values(i) :: (overlappingIdxs map values toList)))
+
+                curEnd = minEnd
+              }
+              else
+                curEnd = thisEnd
+            }
           }
 
-          i += 1
+          i = endIndex
         }
         buffer.toList
       }

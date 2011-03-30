@@ -54,12 +54,12 @@ object LongRangeMapSpecs extends Specification with ScalaCheck with BetterScalaC
     "find overlaps" in {
       val map =
         Builder[String]
-          .add(50, 100, "test")
-          .add(95, 105, "test2")
+          .add(50, 105, "test")
+          .add(95, 100, "test2")
           .add(97, 110, "test3")
           .toLongRangeMap
 
-      map.overlaps must be_==(List((95, 100, List("test", "test2", "test3")), (97, 105, List("test2", "test3"))))
+      map.overlaps must be_==(List((95, 100, List("test", "test2", "test3")), (100, 105, List("test", "test3"))))
     }
   }
 
