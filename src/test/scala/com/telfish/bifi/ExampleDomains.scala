@@ -10,6 +10,8 @@ trait ExampleDomains {
     def range(expr: RangeExpr[Char]): List[(Long, Long)] = RangeExpr.rangeByExpr[Char](expr, this)
 
     def rangeify(range: (Long, Long)): RangeExpr[Char] = RangeExpr.exprByRange(range, this)
+
+    type V = ExampleDomains#Value[Char, this.type]
   }
 
   val domainA = SimpleDomain(2)
@@ -18,9 +20,15 @@ trait ExampleDomains {
 
   val theDomain = domainA × domainB × domainC
 
-  case class Value[T, D <: Domain[T]](get: T)
+  val longOrder = implicitly[Ordering[Long]]
+  case class Value[T, D <: Domain[T]](domain: D, get: T) extends Ordered[Value[T, D]] {
+    def index: Long = domain.indexOf(get)
+
+    def compare(that: Value[T, D]): Int = longOrder.compare(this.index, that.index)
+  }
+
   def arbitraryValue[T](implicit d: Domain[T]): Arbitrary[Value[d.Value, d.type]] =
-    Arbitrary(Gen.oneOf(d.values).map(Value.apply _))
+    Arbitrary(Gen.oneOf(d.values).map(v => Value[d.Value, d.type](d, v)))
 
   val a = 'a'
   val b = 'b'

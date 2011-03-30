@@ -1,10 +1,30 @@
 package com.telfish.bifi
 
 import org.specs.{ScalaCheck, Specification}
-import org.scalacheck.Gen
+import org.scalacheck.{Prop, Gen}
+import org.specs.specification.{Example, PendingUntilFixed}
 
-object DomainSpecs extends Specification with ScalaCheck /*with BetterScalaCheckVerifies*/ with ExampleDomains {
+object DomainSpecs extends Specification with ScalaCheck /*with BetterScalaCheckVerifies*/ with ExampleDomains with PendingUntilFixed {
   "Domains" should {
+    "rangeify index ranges" in {
+      import RangeExpr.{range => r, _}
+
+      "all" in {
+        domainC.rangeify(0, 4) must be_==(all)
+      }
+      "range" in {
+        domainC.rangeify(1, 3) must be_==(r(b, c))
+      }
+      "single" in {
+        domainC.rangeify(1, 2) must be_==(single(b))
+      }
+      "multiple" in {
+
+      } pendingUntilFixed
+
+      null: Example
+    }
+
     "properly span up a 2-dim space" in {
       val myDomain = domainA × domainB
 
@@ -49,7 +69,7 @@ object DomainSpecs extends Specification with ScalaCheck /*with BetterScalaCheck
         myDomain.elementAt(12) must be_==(t(b, a, a))
       }
 
-      "calculate proper ranges" in {
+      "calculate proper range indices" in {
         import RangeExpr.{range => r, _}
 
         "for ranges" in {
@@ -61,6 +81,43 @@ object DomainSpecs extends Specification with ScalaCheck /*with BetterScalaCheck
           val range = myDomain.range(((all, r(a, b)), all))
 
           range must be_==(List((0, 4), (4, 8), (12, 16), (16, 20)))
+        }
+      }
+
+      "calculate proper range expr from range indices" in {
+        import RangeExpr.{range => r, all, _}
+
+        "for all" in {
+          val expr = myDomain.rangeify((0, 24))
+
+          expr must be_==(((all, all), all))
+        }
+
+        "for parts" in {
+          val expr = myDomain.rangeify((9, 12))
+
+          expr must be_==(((single(a), single(c)), r(b, d)))
+        }
+
+        import Prop._
+        val validIndex = Gen.choose(0, myDomain.size - 1)
+
+        "for arbitrary index ranges (roundtrip)" in {
+          val roundTrip = Prop.forAll(validIndex, validIndex) { (start: Long, end: Long) =>
+            (end > start) ==> (myDomain.range(myDomain.rangeify(start, end)) == List((start, end)))
+          }
+          roundTrip must pass
+        }
+
+        "for arbitrary ranges in parts (roundtrip)" in {
+          implicit val x = arbitraryValue(domainA)
+
+          val roundTrip = Prop.forAll { (start: Value[Char, domainA.type], end: Value[Char, domainA.type]) =>
+            val range = ((all, all), r(start.get, end.get))
+
+            end > start ==> (myDomain.rangeify(myDomain.range(range).head) == range)
+          }
+          roundTrip must pass
         }
       }
     }
