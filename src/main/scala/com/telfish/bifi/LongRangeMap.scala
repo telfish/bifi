@@ -98,23 +98,20 @@ class LongRangeMapBuilder[A: ClassManifest] {
           val nextStart = starts.indexWhere(_ >= thisEnd, i + 1)
           val endIndex = if (nextStart == -1) size else nextStart
 
-          if (endIndex > i + 1) {
-            var curEnd = starts(i)
+          val overlappingIdxs = (i until endIndex)
+          val events =
+            (overlappingIdxs
+              .flatMap(idx => List(starts(idx), ends(idx)))
+              .toSet
+              .filter(_ <= thisEnd)
+              .toList
+              .sorted)
 
-            while (curEnd < thisEnd) {
-              val overlappingIdxs = ((i+1) until endIndex) filterNot (idx => ends(idx) <= curEnd)
+          events.sliding(2) foreach { case List(start, end) =>
+            val active = overlappingIdxs filter (idx => starts(idx) <= start && ends(idx) >= end )
 
-              if (overlappingIdxs.nonEmpty) {
-                val maxStart = math.max(curEnd,  overlappingIdxs.map(starts).min)
-                val minEnd   = math.min(thisEnd, overlappingIdxs.map(ends).min)
-
-                buffer += ((maxStart, minEnd, values(i) :: (overlappingIdxs map values toList)))
-
-                curEnd = minEnd
-              }
-              else
-                curEnd = thisEnd
-            }
+            if (active.size > 1)
+              buffer += ((start, end, active map values toList))
           }
 
           i = endIndex
