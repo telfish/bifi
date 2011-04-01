@@ -59,7 +59,7 @@ class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Arra
     var i = -1
 
     while (i < size) {
-      val thisEnd = if (i >= 0) starts(i) + lengths(i) else 0L
+      val thisEnd = if (i >= 0) ends(i) else 0L
       val nextStart = if (i + 1 < size) starts(i + 1) else end
 
       if (thisEnd < nextStart)
