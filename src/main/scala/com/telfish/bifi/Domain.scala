@@ -22,12 +22,6 @@ trait Domain[T] { outer =>
    */
   def elementAt(pos: Long): T
 
-  /**
-   * The range of values between start and end inclusive.
-   */
-  def indexRange(start: T, end: T): (Long, Long) =
-    (indexOf(start), indexOf(end) + 1)
-
   def values: Seq[T] = new IndexedSeq[T] {
     def apply(idx: Int): T = elementAt(idx.toLong)
     def length: Int = Domain.this.size.toInt
@@ -40,6 +34,10 @@ trait Domain[T] { outer =>
   }
 }
 
+/**
+ * A domain where a consecutive range of values of type T corresponds to
+ * a consecutive range of characteristic Long values.
+ */
 trait RangeDomain[T, R] extends Domain[T] {
   type RangeT = R
   type MapT[A] = DomainMap[T, R, A]
@@ -53,6 +51,13 @@ trait RangeDomain[T, R] extends Domain[T] {
   def valuesInRange(expr: R): Traversable[T] = range(expr).flatMap {
     case (start, end) => (start until end) map elementAt
   }
+
+  /**
+   * The range of values between start and end inclusive.
+   */
+  def indexRange(start: T, end: T): (Long, Long) =
+    (indexOf(start), indexOf(end) + 1)
+
   def single(t: T): R = rangeify(indexRange(t, t)).head
 
   def ×[T2, R2](other: RangeDomain[T2, R2]): DomainProduct[T, T2, R, R2] = new DomainProduct(this, other)
