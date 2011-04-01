@@ -46,7 +46,11 @@ class EnumDomain[T](values: IndexedSeq[T]) extends RangeDomain[T, SetExpr[T]] {
 }
 
 class HashedEnumDomain[T](values: IndexedSeq[T]) extends EnumDomain(values) {
-  val elementToIndexMap: Map[T, Int] = values.zipWithIndex.toMap
+  val elementToIndexMap = {
+    val map = new java.util.IdentityHashMap[T, Int]
+    values.zipWithIndex foreach { case (v, i) => map.put(v, i) }
+    map
+  }
 
-  override def indexOf(t: T): Long = elementToIndexMap(t)
+  override def indexOf(t: T): Long = elementToIndexMap.get(t)
 }
