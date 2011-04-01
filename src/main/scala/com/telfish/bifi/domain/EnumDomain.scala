@@ -1,22 +1,8 @@
 package com.telfish.bifi
+package domain
 
 import collection.mutable.ArrayBuffer
 
-sealed trait SetExpr[+T]
-
-object SetExpr {
-  case class Single[T](t: T) extends SetExpr[T]
-  case class Several[T](t: List[T]) extends SetExpr[T]
-  case object All extends SetExpr[Nothing]
-
-  trait HasTuplizer[X] {
-    def ~[U](next: U): (X, U)
-  }
-
-  implicit def tuplize[T](x: T): HasTuplizer[T] = new HasTuplizer[T] {
-    def ~[U](next: U): (T, U) = (x, next)
-  }
-}
 
 class EnumDomain[T](values: IndexedSeq[T]) extends RangeDomain[T, SetExpr[T]] {
   def elementAt(pos: Long): T = values(pos.toInt)
@@ -53,12 +39,3 @@ class EnumDomain[T](values: IndexedSeq[T]) extends RangeDomain[T, SetExpr[T]] {
   }
 }
 
-class HashedEnumDomain[T](values: IndexedSeq[T]) extends EnumDomain(values) {
-  val elementToIndexMap = {
-    val map = new java.util.IdentityHashMap[T, Int]
-    values.zipWithIndex foreach { case (v, i) => map.put(v, i) }
-    map
-  }
-
-  override def indexOf(t: T): Long = elementToIndexMap.get(t)
-}

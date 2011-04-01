@@ -1,25 +1,25 @@
-package com.telfish.bifi
+package com.telfish.bifi.domain
 
 import org.specs.{ScalaCheck, Specification}
 import org.scalacheck.{Prop, Gen}
-import org.specs.specification.{Example, PendingUntilFixed}
-import com.telfish.bifi.RangeExpr._
+import org.specs.specification.PendingUntilFixed
 
 object DomainSpecs extends Specification with ScalaCheck with ExampleDomains with PendingUntilFixed {
   noDetailedDiffs()
 
   "Domains" should {
-    "rangeify index ranges" in {
-      import RangeExpr.{range => r, _}
+    import RangeExpr._
 
-      "all" in {
-        domainC.rangeify(0, 4) must be_==(List(all))
+    "rangeify index ranges" in {
+
+      "All" in {
+        domainC.rangeify(0, 4) must be_==(List(All))
       }
       "range" in {
-        domainC.rangeify(1, 3) must be_==(List(r(b, c)))
+        domainC.rangeify(1, 3) must be_==(List(Range(b, c)))
       }
       "single" in {
-        domainC.rangeify(1, 2) must be_==(List(single(b)))
+        domainC.rangeify(1, 2) must be_==(List(Single(b)))
       }
     }
 
@@ -38,15 +38,14 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
       }
 
       "calculate proper ranges indices" in {
-        import RangeExpr.{range => r, _}
 
         "if last one is single" in {
-          val range = myDomain.range((r(a, b), single(a)))
+          val range = myDomain.range((Range(a, b), Single(a)))
 
           range must be_==(List((0, 1), (3, 4)))
         }
-        "if last one is all" in {
-          val range = myDomain.range((r(a, b), all))
+        "if last one is All" in {
+          val range = myDomain.range((Range(a, b), All))
 
           range must be_==(List((0, 6)))
         }
@@ -58,8 +57,8 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
             val expr = myDomain.rangeify((2, 5))
 
             expr must be_==(List(
-              (single(a), single(c)),
-              (single(b), range(a, b))
+              (Single(a), Single(c)),
+              (Single(b), Range(a, b))
             ))
           }
 
@@ -67,8 +66,8 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
             val expr = myDomain.rangeify((0, 4))
 
             expr must be_==(List(
-              (single(a), all),
-              (single(b), single(a))
+              (Single(a), All),
+              (Single(b), Single(a))
             ))
           }
         }
@@ -98,33 +97,29 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
       }
 
       "calculate proper range indices" in {
-        import RangeExpr.{range => r, _}
-
         "for ranges" in {
-          val range = myDomain.range(((r(a, b), r(a, b)), r(a, b)))
+          val range = myDomain.range(((Range(a, b), Range(a, b)), Range(a, b)))
 
           range must be_==(List((0, 2), (4, 6), (12, 14), (16, 18)))
         }
         "for complete domains" in {
-          val range = myDomain.range(((all, r(a, b)), all))
+          val range = myDomain.range(((All, Range(a, b)), All))
 
           range must be_==(List((0, 8), (12, 20)))
         }
       }
 
       "calculate proper range expr from range indices" in {
-        import RangeExpr.{range => r, all, _}
-
-        "for all" in {
+        "for All" in {
           val expr = myDomain.rangeify((0, 24))
 
-          expr must be_==(List(((all, all), all)))
+          expr must be_==(List(((All, All), All)))
         }
 
         "for parts" in {
           val expr = myDomain.rangeify((9, 12))
 
-          expr must be_==(List(((single(a), single(c)), r(b, d))))
+          expr must be_==(List(((Single(a), Single(c)), Range(b, d))))
         }
 
         import Prop._
@@ -145,7 +140,7 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
           implicit val x = arbitraryValue(domainA)
 
           val roundTrip = Prop.forAll { (start: Value[Char, domainA.type], end: Value[Char, domainA.type]) =>
-            val range = ((all, all), r(start.get, end.get))
+            val range = ((All, All), Range(start.get, end.get))
 
             end > start ==> (myDomain.rangeify(myDomain.range(range).head) == range)
           }

@@ -1,4 +1,4 @@
-package com.telfish.bifi
+package com.telfish.bifi.domain
 
 import org.specs.{ScalaCheck, Specification}
 
@@ -39,6 +39,8 @@ object ConcreteDomainSpecs extends Specification with ScalaCheck {
   }
 
   "NumericRangeDomains" should {
+    import RangeExpr._
+
     object MinuteDomain extends NumericRangeDomain(0, 60)
 
     "elementAt" in {

@@ -1,4 +1,4 @@
-package com.telfish.bifi
+package com.telfish.bifi.domain
 
 class NumericRangeDomain[T](start: T, end: T)(implicit num: Numeric[T]) extends RangeDomain[T, RangeExpr[T]] {
   import num._

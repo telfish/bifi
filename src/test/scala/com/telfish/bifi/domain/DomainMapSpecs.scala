@@ -1,4 +1,4 @@
-package com.telfish.bifi
+package com.telfish.bifi.domain
 
 import org.specs.{ScalaCheck, Specification}
 import org.specs.specification.PendingUntilFixed
@@ -11,7 +11,7 @@ object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains 
     "map domain values to target elements" in {
       "for single values" in {
         "manual test" in {
-          val map = Builder[String].add(((single(a), single(b)), single(a)), "test").toDomainMap
+          val map = Builder[String].add(((Single(a), Single(b)), Single(a)), "test").toDomainMap
 
           map.get(((a, b), a)) must beSome("test")
         }
@@ -28,32 +28,32 @@ object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains 
     "report gaps" in {
 
       "if only single is set" in {
-        val map = Builder[String].add(((single(a), single(b)), single(a)), "test").toDomainMap
+        val map = Builder[String].add(((Single(a), Single(b)), Single(a)), "test").toDomainMap
 
         map.gaps must containAll(List(
-          ((single(a), single(b)), range(b, d)),
-          ((single(a), single(a)), all),
-          ((single(a), single(c)), all),
-          ((single(b), all), all)
+          ((Single(a), Single(b)), Range(b, d)),
+          ((Single(a), Single(a)), All),
+          ((Single(a), Single(c)), All),
+          ((Single(b), All), All)
         ))
       } pendingUntilFixed
 
       "if several are set" in {
         val map =
           Builder[String]
-            .add(((all, range(a, b)), all), "test")
-            .add(((all, single(c)), range(a, b)), "test2")
+            .add(((All, Range(a, b)), All), "test")
+            .add(((All, Single(c)), Range(a, b)), "test2")
             .toDomainMap
 
         "simple" in {
           map.gaps must be_==(List(
-            ((single(a), single(c)), range(c, d)),
-            ((single(b), single(c)), range(c, d))
+            ((Single(a), Single(c)), Range(c, d)),
+            ((Single(b), Single(c)), Range(c, d))
           ))
         }
 
         "joined" in {
-          map.gaps must be_==(List(((all, single(c)), range(c, d))))
+          map.gaps must be_==(List(((All, Single(c)), Range(c, d))))
         } pendingUntilFixed("one of 'joined' or 'simple' cannot succeed, for now unification has not been implemented")
       }
     }
@@ -62,23 +62,23 @@ object DomainMapSpecs extends Specification with ScalaCheck with ExampleDomains 
         val map =
           Builder[String]
             .addSingle(((b, c), d), "test")
-            .add(((single(b), all), range(c, d)), "test2")
+            .add(((Single(b), All), Range(c, d)), "test2")
             .toDomainMap
 
-        map.overlaps must be_==(List((((single(b), single(c)), single(d)), List("test2", "test"))))
+        map.overlaps must be_==(List((((Single(b), Single(c)), Single(d)), List("test2", "test"))))
       }
 
       "multiple overlaps" in {
         val map =
           Builder[String]
             .addSingle(((b, c), d), "test")
-            .add(((single(b), all), range(c, d)), "test2")
-            .add(((all, single(c)), all), "tester")
+            .add(((Single(b), All), Range(c, d)), "test2")
+            .add(((All, Single(c)), All), "tester")
             .toDomainMap
 
         map.overlaps must containAll(List(
-          (((single(b), single(c)), single(c)), List("tester", "test2")),
-          (((single(b), single(c)), single(d)), List("tester", "test2", "test"))
+          (((Single(b), Single(c)), Single(c)), List("tester", "test2")),
+          (((Single(b), Single(c)), Single(d)), List("tester", "test2", "test"))
         ))
       }
     }

@@ -1,4 +1,4 @@
-package com.telfish.bifi
+package com.telfish.bifi.domain
 
 import org.scalacheck.{Gen, Arbitrary}
 
