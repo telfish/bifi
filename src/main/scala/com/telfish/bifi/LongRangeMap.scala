@@ -28,7 +28,7 @@ trait LongRangeMap[+A] {
 
 class LongRangeMapBuilder[A: ClassManifest] {
   type Entry = (Long, Long, A)
-  var entries = new TreeSet[Entry]()(Ordering.by((_: Entry)._1))
+  var entries = new ArrayBuffer[Entry]
 
   def add(from: Long, to: Long, value: A): this.type = {
     assert(from < to)
@@ -39,7 +39,7 @@ class LongRangeMapBuilder[A: ClassManifest] {
 
 
   def toLongRangeMap: LongRangeMap[A] = {
-    val sorted = entries
+    val sorted = entries.sortBy(_._1)
 
     val starts = sorted.view.map(_._1).toArray
     val lengths = sorted.view.map(_._2).toArray
