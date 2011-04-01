@@ -28,6 +28,9 @@ trait Domain[T] { outer =>
 
 trait RangeDomain[T, R] extends Domain[T] {
   type RangeT = R
+  type MapT[A] = DomainMap[T, R, A]
+
+  def mapBuilder[A: ClassManifest]: DomainMapBuilder[T, R, A] = new DomainMapBuilder[T, R, A](this)
 
   def range(expr: R): List[(Long, Long)]
 
@@ -81,12 +84,19 @@ case class DomainProduct[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomai
 
   def size: Long = d1.size * d2.size
 
-  def range(expr: (R1, R2)): List[(Long, Long)] =
+  def range(expr: (R1, R2)): List[(Long, Long)] = {
+    def product(start1: Long, end1: Long, start2: Long, end2: Long): Traversable[(Long, Long)] =
+      if (start2 == 0 && end2 == d2.size)
+        List((start1 * d2.size, end1 * d2.size))
+      else
+        (start1 until end1) map (i1 => (i1 * d2.size + start2, i1 * d2.size + end2))
+
     for { (start1, end1) <- d1.range(expr._1)
-          i1             <- start1 until end1
           (start2, end2) <- d2.range(expr._2)
+          p              <- product(start1, end1, start2, end2)
         }
-      yield (i1 * d2.size + start2, i1 * d2.size + end2)
+      yield p
+  }
 
   def rangeify(range: (Long, Long)): List[(R1, R2)] = {
     val (start1, start2) = elementAt(range._1)

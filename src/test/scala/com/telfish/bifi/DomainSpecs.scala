@@ -39,9 +39,17 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
 
       "calculate proper ranges indices" in {
         import RangeExpr.{range => r, _}
-        val range = myDomain.range((r(a, b), single(a)))
 
-        range must be_==(List((0, 1), (3, 4)))
+        "if last one is single" in {
+          val range = myDomain.range((r(a, b), single(a)))
+
+          range must be_==(List((0, 1), (3, 4)))
+        }
+        "if last one is all" in {
+          val range = myDomain.range((r(a, b), all))
+
+          range must be_==(List((0, 6)))
+        }
       }
 
       "calculate proper range expr from range indices" in {
@@ -100,7 +108,7 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
         "for complete domains" in {
           val range = myDomain.range(((all, r(a, b)), all))
 
-          range must be_==(List((0, 4), (4, 8), (12, 16), (16, 20)))
+          range must be_==(List((0, 8), (12, 20)))
         }
       }
 
