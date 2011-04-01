@@ -55,43 +55,43 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
       "test1" in {
         val map =
           Builder[String]
-            .add("---------------     ", "test")
-            .add("     -----          ", "test2")
-            .add("       -------------", "tester")
+            .add("***************     ", "test")
+            .add("     *****          ", "test2")
+            .add("       *************", "tester")
             .toLongRangeMap
 
         map.overlaps must be_==(List(
-               t("     --             ", List("test", "test2")),
-               t("       ---          ", List("test", "test2", "tester")),
-               t("          -----     ", List("test", "tester"))
+               t("     **             ", List("test", "test2")),
+               t("       ***          ", List("test", "test2", "tester")),
+               t("          *****     ", List("test", "tester"))
         ))
       }
 
       "test2" in {
         val map =
           Builder[String]
-            .add("   -", "test")
-            .add("  --", "test2")
-            .add("----", "tester")
+            .add("   *", "test")
+            .add("  **", "test2")
+            .add("****", "tester")
             .toLongRangeMap
 
         map.overlaps must be_==(List(
-               t("  - ", List("tester", "test2")),
-               t("   -", List("tester", "test2", "test"))
+               t("  * ", List("tester", "test2")),
+               t("   *", List("tester", "test2", "test"))
         ))
       }
 
       "test3" in {
         val map =
           Builder[String]
-            .add("------          ", "test")
-            .add("   -------      ", "test2")
-            .add("         ------ ", "tester")
+            .add("******          ", "test")
+            .add("   *******      ", "test2")
+            .add("         ****** ", "tester")
             .toLongRangeMap
 
         map.overlaps must be_==(List(
-               t("   ---          ", List("test", "test2")),
-               t("         -      ", List("test2", "tester"))
+               t("   ***          ", List("test", "test2")),
+               t("         *      ", List("test2", "tester"))
         ))
       }
     }
