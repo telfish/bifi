@@ -5,6 +5,6 @@ import org.specs.runner.{JUnit4, JUnitSuiteRunner}
 
 @RunWith(classOf[JUnitSuiteRunner])
 class JUnitSpecs extends JUnit4(
-  BitFieldSpecs, LongRangeMapSpecs,
+  LongRangeMapSpecs,
   domain.DomainSpecs, domain.ConcreteDomainSpecs, domain.DomainMapSpecs
 )
