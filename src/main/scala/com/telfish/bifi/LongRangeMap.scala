@@ -1,7 +1,6 @@
 package com.telfish.bifi
 
 import java.util.Arrays
-import collection.immutable.TreeSet
 import collection.mutable.{ListBuffer, ArrayBuffer}
 
 /**
