@@ -1,16 +1,30 @@
 package com.telfish.bifi
 
 /**
- * A domain is a mapping from all elements of type T of a domain of finite, discrete values
- * to a characteristic Long value designating this element (and back).
+ * A domain is a mapping from all elements of a domain of finite, discrete values of type T
+ * to a characteristic Long value between 0 and `size` designating this element (and back).
  */
 trait Domain[T] { outer =>
   type Value = T
 
+  /**
+   * The number of all values in this domain
+   */
   def size: Long
+
+  /**
+   * The characteristic Long value of an element
+   */
   def indexOf(t: T): Long
+
+  /**
+   * The element for a characteristic value.
+   */
   def elementAt(pos: Long): T
 
+  /**
+   * The range of values between start and end inclusive.
+   */
   def indexRange(start: T, end: T): (Long, Long) =
     (indexOf(start), indexOf(end) + 1)
 
@@ -125,24 +139,4 @@ case class DomainProduct[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomai
       }
     }
   }
-}
-
-object Domain {
-  //implicit def tupled3Domain[T1, T2, T3](d1: Domain[T1], d2: Domain[T2], d3: Domain[T3]): Domain[(T1, T2, T3)] =
-//    tupled2Domain(d1, tupled2Domain(d2, d3)).map({ case (a, (b, c)) => (a, b, c) }, { case (a, b, c) => (a, (b, c)) })
-    /* faster direct version:
-
-    new Domain[(T1, T2, T3)] {
-      def elementAt(pos: Long): (T1, T2, T3) = {
-        val i1 = pos / d3.size / d2.size
-        val i2 = pos / d3.size % d2.size
-        val i3 = pos % d3.size
-
-        (d1.elementAt(i1), d2.elementAt(i2), d3.elementAt(i3))
-      }
-
-      def indexOf(t: (T1, T2, T3)): Long = (d1.indexOf(t._1) * d2.size + d2.indexOf(t._2)) * d3.size + d3.indexOf(t._3)
-
-      def size: Long = d1.size * d2.size * d3.size
-    }*/
 }
