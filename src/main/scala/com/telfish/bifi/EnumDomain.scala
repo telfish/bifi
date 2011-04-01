@@ -1,5 +1,7 @@
 package com.telfish.bifi
 
+import collection.mutable.ArrayBuffer
+
 sealed trait SetExpr[+T]
 
 object SetExpr {
@@ -22,7 +24,23 @@ class EnumDomain[T](values: IndexedSeq[T]) extends RangeDomain[T, SetExpr[T]] {
 
   def range(expr: SetExpr[T]): List[(Long, Long)] = expr match {
     case SetExpr.Single(x)   => List(indexRange(x, x))
-    case SetExpr.Several(xs) => xs map { x => indexRange(x, x) }
+    case SetExpr.Several(xs) =>
+      var curStart = -2L
+      var last = -2L
+      val res = new ArrayBuffer[(Long, Long)]
+      xs.map(indexOf).sorted foreach { idx =>
+        if (idx == last + 1L) {
+          last = idx
+        } else {
+          if (curStart >= 0L)
+            res += ((curStart, last + 1L))
+          curStart = idx
+          last = idx
+        }
+      }
+      if (curStart >= 0L)
+        res += ((curStart, last + 1L))
+      res.toList
     case SetExpr.All         => List((0, size))
   }
 }
