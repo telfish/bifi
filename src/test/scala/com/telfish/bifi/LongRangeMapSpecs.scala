@@ -55,43 +55,63 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
       "test1" in {
         val map =
           Builder[String]
-            .add(50, 105, "test")
-            .add(95, 100, "test2")
-            .add(97, 110, "tester")
+            .add("]---------------[     ", "test")
+            .add("     ]-----[          ", "test2")
+            .add("       ]-------------[", "tester")
             .toLongRangeMap
 
         map.overlaps must be_==(List(
-          (95, 97, List("test", "test2")),
-          (97, 100, List("test", "test2", "tester")),
-          (100, 105, List("test", "tester"))))
+               t("     ]--[             ", List("test", "test2")),
+               t("       ]---[          ", List("test", "test2", "tester")),
+               t("          ]-----[     ", List("test", "tester"))
+        ))
       }
 
       "test2" in {
         val map =
           Builder[String]
-            .add(23, 24, "test")
-            .add(22, 24, "test2")
-            .add(20, 24, "tester")
+            .add("   ]-[", "test")
+            .add("  ]--[", "test2")
+            .add("]----[", "tester")
             .toLongRangeMap
 
-        map.overlaps must be_==(List((22, 23, List("tester", "test2")), (23, 24, List("tester", "test2", "test"))))
+        map.overlaps must be_==(List(
+               t("  ]-[ ", List("tester", "test2")),
+               t("   ]-[", List("tester", "test2", "test"))
+        ))
       }
 
       "test3" in {
         val map =
           Builder[String]
-            .add(20, 23, "test")
-            .add(22, 25, "test2")
-            .add(24, 26, "tester")
+            .add("]------[          ", "test")
+            .add("   ]-------[      ", "test2")
+            .add("         ]------[ ", "tester")
             .toLongRangeMap
 
         map.overlaps must be_==(List(
-          (22, 23, List("test", "test2")),
-          (24, 25, List("test2", "tester"))
+               t("   ]---[          ", List("test", "test2")),
+               t("         ]-[      ", List("test2", "tester"))
         ))
       }
     }
   }
 
-  def Builder[A: ClassManifest]: LongRangeMapBuilder[A] = new LongRangeMapBuilder[A]
+  def Builder[A: ClassManifest]: GraphicBuilder[A] = new GraphicBuilder[A]
+
+  val GraphicInterval = """([ ]*)\](-*)\[[ ]*""".r
+  def graphicInterval(str: String): (Long, Long) = str match {
+    case GraphicInterval(whitespace, dashes) => (whitespace.size, whitespace.size + dashes.size)
+  }
+  def t[A](str: String, a: A): (Long, Long, A) = {
+    val (start, end) = graphicInterval(str)
+    (start, end, a)
+  }
+
+  class GraphicBuilder[A: ClassManifest] extends LongRangeMapBuilder[A] {
+    def add(str: String, value: A): this.type = {
+      val (start, end) = graphicInterval(str)
+      add(start, end, value)
+    }
+  }
 }
