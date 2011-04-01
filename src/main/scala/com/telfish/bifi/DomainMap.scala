@@ -4,6 +4,8 @@ trait DomainMap[T, R, A] {
   def domain: RangeDomain[T, R]
   def underlyingIndexMap: LongRangeMap[A]
 
+  def cardinality: Int
+
   /**
    * Gets the value associated with a domain value
    */
@@ -43,6 +45,8 @@ class DomainMapBuilder[T, R, A: ClassManifest](val domain: RangeDomain[T, R]) { 
         theMap.overlaps flatMap { case (s, e, values) => domain.rangeify(s, e) map ((_, values)) }
 
       def get(l: T): Option[A] = theMap.get(domain.indexOf(l))
+
+      def cardinality: Int = theMap.cardinality
     }
   }
 }

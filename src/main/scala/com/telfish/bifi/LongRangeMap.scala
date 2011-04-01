@@ -22,6 +22,8 @@ trait LongRangeMap[+A] {
    * Find all double definitions in the definition space.
    */
   def overlaps: List[(Long, Long, List[A])]
+
+  def cardinality: Int
 }
 
 class LongRangeMapBuilder[A: ClassManifest] {
@@ -118,6 +120,8 @@ class LongRangeMapBuilder[A: ClassManifest] {
         }
         buffer.toList
       }
+
+      def cardinality: Int = size
     }
   }
 }
