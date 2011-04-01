@@ -26,10 +26,10 @@ trait LongRangeMap[+A] {
 }
 
 class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends LongRangeMap[A] {
-  val size = starts.size
+  val size = starts.length
 
   val ends = new IndexedSeq[Long] {
-    def length: Int = size
+    def length: Int = starts.length
     def apply(idx: Int): Long = starts(idx) + lengths(idx)
   }
 
@@ -71,15 +71,28 @@ class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Arra
     buffer.toList
   }
   def overlaps: List[(Long, Long, List[A])] = {
+    /*
+     * The strategy to find overlaps here is this:
+     *  - go forward through the list of intervals
+     *  - for each interval first look, how many of the directly following intervals lap into the current one
+     *  - with this list of overlapping intervals do the following:
+     *    * collect a set of events, events are all starts and ends of the intervals in question
+     *    * order this set
+     *    * slide over the events and find all active events inside the interval
+     *    * if more than one element interval was found active inside an interval, report it
+     */
+
     val buffer = new ListBuffer[(Long, Long, List[A])]
 
     var i = 0
 
     while (i + 1 < size) {
+      import FindHelper._
+
       val thisEnd = ends(i)
 
       val nextStart = starts.indexWhere(_ >= thisEnd, i + 1)
-      val endIndex = if (nextStart == -1) size else nextStart
+      val endIndex = nextStart foundOrElse size
 
       val overlappingIdxs = (i until endIndex)
       val events =
@@ -97,7 +110,7 @@ class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Arra
           buffer += ((start, end, active map values toList))
       }
 
-      i = endIndex
+      i = ends.indexWhere(_ > thisEnd, i + 1) foundOrElse size
     }
     buffer.toList
   }
@@ -127,4 +140,15 @@ class LongRangeMapBuilder[A: ClassManifest] {
 
     new RLELongRangeMap(starts, lengths, values)
   }
+}
+
+object FindHelper {
+  trait FoundOrElse {
+    def foundOrElse(elseIdx: Int): Int
+  }
+  implicit def int2FoundOrElse(searchResult: Int): FoundOrElse =
+    new FoundOrElse {
+      def foundOrElse(elseIdx: Int): Int =
+        if (searchResult == -1) elseIdx else searchResult
+    }
 }

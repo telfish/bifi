@@ -76,6 +76,20 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
 
         map.overlaps must be_==(List((22, 23, List("tester", "test2")), (23, 24, List("tester", "test2", "test"))))
       }
+
+      "test3" in {
+        val map =
+          Builder[String]
+            .add(20, 23, "test")
+            .add(22, 25, "test2")
+            .add(24, 26, "tester")
+            .toLongRangeMap
+
+        map.overlaps must be_==(List(
+          (22, 23, List("test", "test2")),
+          (24, 25, List("test2", "tester"))
+        ))
+      }
     }
   }
 
