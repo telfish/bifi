@@ -99,7 +99,7 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
 
   def Builder[A: ClassManifest]: GraphicBuilder[A] = new GraphicBuilder[A]
 
-  val GraphicInterval = """([ ]*)(-*)[ ]*""".r
+  val GraphicInterval = """([ ]*)(\**)[ ]*""".r
   def graphicInterval(str: String): (Long, Long) = str match {
     case GraphicInterval(whitespace, dashes) => (whitespace.size, whitespace.size + dashes.size)
   }
