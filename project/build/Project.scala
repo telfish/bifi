@@ -10,4 +10,11 @@ class Project(info: ProjectInfo) extends DefaultProject(info) {
   override def testCompileOptions = CompileOption("-Ydependent-method-types") :: super.testCompileOptions.toList
 
   lazy val testPrepare = task { None } dependsOn(copyTestResources, testCompile)
+
+  // Additional JUnit XML report generation support
+  import eu.henkelmann.sbt.JUnitXmlTestsListener
+  //create a listener that writes to the normal output directory
+  def junitXmlListener: TestReportListener = new JUnitXmlTestsListener(outputPath.toString)
+  //add the new listener to the already configured ones
+  override def testListeners: Seq[TestReportListener] = super.testListeners ++ Seq(junitXmlListener)
 }
