@@ -134,6 +134,7 @@ abstract class GenericRLELongRangeMap[A](starts: Array[Long], lengths: Array[Lon
 
   def cardinality: Int = size
 
+}
 
 case class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends GenericRLELongRangeMap[A](starts, lengths) {
   def valueAt(i: Int): A = values(i)
