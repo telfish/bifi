@@ -29,9 +29,17 @@ trait LongRangeMap[+A] {
 
   protected[bifi] def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)]
 
+
+  /**
+   * Similar to ×. Returns a long range map where
+   *  get(l) == (this.get(l), other.get(l))
+   */
+  def |[B: ClassManifest](other: LongRangeMap[B]): LongRangeMap[(Option[A], Option[B])]
+
+  def traverse: Traversable[(Long, Long, A)]
 }
 
-abstract class GenericRLELongRangeMap[A](starts: Array[Long], lengths: Array[Long]) extends LongRangeMap[A]{
+abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Array[Long], protected val lengths: Array[Long]) extends LongRangeMap[A]{
   def valueAt(i: Int): A
 
   val size = starts.length
@@ -138,10 +146,78 @@ abstract class GenericRLELongRangeMap[A](starts: Array[Long], lengths: Array[Lon
 
   def cardinality: Int = size
 
+  def |[B: ClassManifest](other: LongRangeMap[B]): LongRangeMap[(Option[A], Option[B])] = other match {
+    case other: GenericRLELongRangeMap[B] =>
+      val newSize = starts.length + other.starts.length
+      val mergedStarts = new Array[Long](newSize)
+      val mergedLengths = new Array[Long](newSize)
+      val mergedAValues = new Array[A](newSize)
+      val mergedBValues = new Array[B](newSize)
+
+      var aIdx   = 0
+      var bIdx   = 0
+      var resIdx = 0
+
+      def takeA = {
+        mergedStarts (resIdx) = starts(aIdx)
+        mergedLengths(resIdx) = lengths(aIdx)
+        mergedAValues(resIdx) = valueAt(aIdx)//.asInstanceOf[AnyRef]
+
+        aIdx += 1
+      }
+      def takeB = {
+        mergedStarts (resIdx) = other.starts(bIdx)
+        mergedLengths(resIdx) = other.lengths(bIdx)
+        mergedBValues(resIdx) = other.valueAt(bIdx)//.asInstanceOf[AnyRef]
+
+        bIdx += 1
+      }
+
+      while (resIdx < newSize) {
+        if (bIdx >= other.starts.length || starts(aIdx) <= other.starts(bIdx))
+          takeA
+        else
+          takeB
+
+        resIdx += 1
+      }
+
+      val intermediary = new Tuple2OptionRLELongRangeMap(mergedStarts, mergedLengths, mergedAValues, mergedBValues)
+
+      val resultStarts = new ArrayBuffer[Long](newSize)
+      val resultLengths = new ArrayBuffer[Long](newSize)
+      val resultAValues = new ArrayBuffer[A](newSize)
+      val resultBValues = new ArrayBuffer[B](newSize)
+
+      val normalized =
+        intermediary.normalize {
+          case element :: Nil                            => element
+          case (Some(a), None) :: (None, Some(b)) :: Nil => (Some(a), Some(b))
+          case (None, Some(b)) :: (Some(a), None) :: Nil => (Some(a), Some(b))
+        }
+
+      for ((start, end, (a, b)) <- normalized) {
+        resultStarts  += start
+        resultLengths += end - start
+        resultAValues += a.getOrElse(null.asInstanceOf[A])
+        resultBValues += b.getOrElse(null.asInstanceOf[B])
+      }
+
+      new Tuple2OptionRLELongRangeMap[A, B](resultStarts.toArray, resultLengths.toArray, resultAValues.toArray, resultBValues.toArray)
+
+    case _ => throw new UnsupportedOperationException("| only supported with other RLELongRangeMaps")
+  }
+
+  def traverse: Traversable[(Long, Long, A)] =
+    (0 until cardinality).view map (i => (starts(i), ends(i), valueAt(i)))
 }
 
-case class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends GenericRLELongRangeMap[A](starts, lengths) {
+class RLELongRangeMap[A: ClassManifest](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends GenericRLELongRangeMap[A](starts, lengths) {
   def valueAt(i: Int): A = values(i)
+}
+
+class Tuple2OptionRLELongRangeMap[A, B](starts: Array[Long], lengths: Array[Long], valuesA: Array[A], valuesB: Array[B]) extends GenericRLELongRangeMap[(Option[A], Option[B])](starts, lengths) {
+  def valueAt(i: Int): (Option[A], Option[B]) = (Option(valuesA(i)), Option(valuesB(i)))
 }
 
 class LongRangeMapBuilder[A: ClassManifest] {

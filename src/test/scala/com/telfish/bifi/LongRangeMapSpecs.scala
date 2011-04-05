@@ -140,6 +140,34 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
         ))
       }
     }
+
+    "`|` with another map" in {
+      "to find gaps and too much defined elements" in {
+        val map =
+          Builder[String]
+            .add("***                 ", "test")
+            .add("     *****          ", "test2")
+            .add("            ******* ", "tester")
+            .toLongRangeMap
+
+        val checkMap =
+          Builder[String]
+            .add("  ***************   ", "defined")
+            .toLongRangeMap
+
+        val defined = Some("defined")
+
+        (map | checkMap).traverse.toList must be_==(List(
+               t("**                  ", (Some("test"),   None)),
+               t("  *                 ", (Some("test"),   defined)),
+               t("   **               ", (None,           defined)),
+               t("     *****          ", (Some("test2"),  defined)),
+               t("          **        ", (None,           defined)),
+               t("            *****   ", (Some("tester"), defined)),
+               t("                 ** ", (Some("tester"), None))
+        ))
+      }
+    }
   }
 
   def Builder[A: ClassManifest]: GraphicBuilder[A] = new GraphicBuilder[A]
