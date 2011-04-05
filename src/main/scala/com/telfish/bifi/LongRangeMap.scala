@@ -25,7 +25,9 @@ trait LongRangeMap[+A] {
   def cardinality: Int
 }
 
-class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends LongRangeMap[A] {
+abstract class GenericRLELongRangeMap[A](starts: Array[Long], lengths: Array[Long]) extends LongRangeMap[A]{
+  def valueAt(i: Int): A
+
   val size = starts.length
 
   val ends = new IndexedSeq[Long] {
@@ -51,7 +53,7 @@ class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Arra
   }
 
   def get(l: Long): Option[A] =
-    indexAt(l).map(values)
+    indexAt(l).map(valueAt)
 
   def gaps(end: Long): List[(Long, Long)] = {
     val buffer = new ListBuffer[(Long, Long)]
@@ -107,7 +109,7 @@ class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Arra
         val active = overlappingIdxs filter (idx => starts(idx) <= start && ends(idx) >= end )
 
         if (active.size > 1)
-          buffer += ((start, end, active map values toList))
+          buffer += ((start, end, active map valueAt toList))
       }
 
       i = ends.indexWhere(_ > thisEnd, i + 1) foundOrElse size
@@ -117,6 +119,9 @@ class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Arra
 
   def cardinality: Int = size
 
+
+case class RLELongRangeMap[A](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends GenericRLELongRangeMap[A](starts, lengths) {
+  def valueAt(i: Int): A = values(i)
 }
 
 class LongRangeMapBuilder[A: ClassManifest] {
