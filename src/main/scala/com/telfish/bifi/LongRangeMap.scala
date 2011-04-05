@@ -13,6 +13,11 @@ trait LongRangeMap[+A] {
   def get(l: Long): Option[A]
 
   /**
+   * The number of ranges in this map
+   */
+  def cardinality: Int
+
+  /**
    * Find all gaps in the definition space between 0 and end
    */
   def gaps(end: Long): List[(Long,  Long)]
@@ -22,7 +27,6 @@ trait LongRangeMap[+A] {
    */
   def overlaps: List[(Long, Long, List[A])]
 
-  def cardinality: Int
   protected[bifi] def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)]
 
 }
