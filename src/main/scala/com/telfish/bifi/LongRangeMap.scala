@@ -23,6 +23,8 @@ trait LongRangeMap[+A] {
   def overlaps: List[(Long, Long, List[A])]
 
   def cardinality: Int
+  protected[bifi] def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)]
+
 }
 
 abstract class GenericRLELongRangeMap[A](starts: Array[Long], lengths: Array[Long]) extends LongRangeMap[A]{
@@ -72,49 +74,62 @@ abstract class GenericRLELongRangeMap[A](starts: Array[Long], lengths: Array[Lon
 
     buffer.toList
   }
-  def overlaps: List[(Long, Long, List[A])] = {
-    /*
-     * The strategy to find overlaps here is this:
-     *  - go forward through the list of intervals
-     *  - for each interval first look, how many of the directly following intervals lap into the current one
-     *  - with this list of overlapping intervals do the following:
-     *    * collect a set of events, events are all starts and ends of the intervals in question
-     *    * order this set
-     *    * slide over the events and find all active events inside the interval
-     *    * if more than one element interval was found active inside an interval, report it
-     */
 
-    val buffer = new ListBuffer[(Long, Long, List[A])]
 
-    var i = 0
+  def overlaps: List[(Long, Long, List[A])] =
+    normalize(identity).filter(_._3.size > 1).toList
 
-    while (i + 1 < size) {
-      import FindHelper._
+  /**
+   * In a LongRangeMap with overlapping ranges, consolidate
+   * double definitions with a merge function.
+   */
+  def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)] = new Traversable[(Long, Long, B)] {
+    def foreach[U](f: ((Long, Long, B)) => U) {
+      /*
+       * The strategy to find overlaps here is this:
+       *  - go forward through the list of intervals
+       *  - for each interval first look, how many of the directly following intervals lap into the current one
+       *  - with this list of overlapping intervals do the following:
+       *    * collect a set of events, events are all starts and ends of the intervals in question
+       *    * order this set
+       *    * slide over the events and find all active events inside the interval
+       *    * if more than one element interval was found active inside an interval, report it
+       */
 
-      val thisEnd = ends(i)
+      val size = starts.size
+      var i = 0
+      var curEnd = 0L
 
-      val nextStart = starts.indexWhere(_ >= thisEnd, i + 1)
-      val endIndex = nextStart foundOrElse size
+      while (i + 1 < size) {
+        import FindHelper._
 
-      val overlappingIdxs = (i until endIndex)
-      val events =
-        (overlappingIdxs
-          .flatMap(idx => List(starts(idx), ends(idx)))
-          .toSet
-          .filter(_ <= thisEnd)
-          .toList
-          .sorted)
+        val thisEnd = ends(i)
 
-      events.sliding(2) foreach { case List(start, end) =>
-        val active = overlappingIdxs filter (idx => starts(idx) <= start && ends(idx) >= end )
+        val nextStart = starts.indexWhere(_ >= thisEnd, i + 1)
+        val endIndex = nextStart foundOrElse size
 
-        if (active.size > 1)
-          buffer += ((start, end, active map valueAt toList))
+        val overlappingIdxs = (i until endIndex)
+        val events =
+          (overlappingIdxs
+            .flatMap(idx => List(starts(idx), ends(idx)))
+            .toSet
+            .filter(_ <= thisEnd)
+            .toList
+            .sorted)
+
+        events.sliding(2) foreach { case List(start, end) =>
+          val active = overlappingIdxs filter (idx => starts(idx) <= start && ends(idx) >= end )
+
+          f((math.max(curEnd, start), end, merge(active map valueAt toList)))
+        }
+
+        i = ends.indexWhere(_ > thisEnd, i + 1) foundOrElse size
+        curEnd = thisEnd
       }
 
-      i = ends.indexWhere(_ > thisEnd, i + 1) foundOrElse size
+      if (i < size)
+        f((math.max(curEnd, starts(i)), ends(i), merge(List(valueAt(i)))))
     }
-    buffer.toList
   }
 
   def cardinality: Int = size

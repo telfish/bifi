@@ -51,6 +51,51 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
       }
     }
 
+    "normalize" in {
+      "situation without overlaps" in {
+        val map =
+          Builder[String]
+            .add("***       ", "test")
+            .add("     *****", "test2")
+            .toLongRangeMap
+
+        map.normalize(identity).toList must be_==(List(
+               t("***       ", List("test")),
+               t("     *****", List("test2"))
+        ))
+      }
+      "situation with single overlaps" in {
+        val map =
+          Builder[String]
+            .add("******    ", "test")
+            .add("    ******", "test2")
+            .toLongRangeMap
+
+        map.normalize(identity).toList must be_==(List(
+               t("****      ", List("test")),
+               t("    **    ", List("test", "test2")),
+               t("      ****", List("test2"))
+        ))
+      }
+
+      "situation with sequential overlaps" in {
+        val map =
+          Builder[String]
+            .add("******          ", "test")
+            .add("   *******      ", "test2")
+            .add("         ****** ", "tester")
+            .toLongRangeMap
+
+        map.normalize(identity).toList must be_==(List(
+               t("***             ", List("test")),
+               t("   ***          ", List("test", "test2")),
+               t("      ***       ", List("test2")),
+               t("         *      ", List("test2", "tester")),
+               t("          ***** ", List("tester"))
+        ))
+      }
+    }
+
     "find overlaps" in {
       "test1" in {
         val map =
