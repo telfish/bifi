@@ -148,7 +148,14 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
 
   def |[B: ClassManifest](other: LongRangeMap[B]): LongRangeMap[(Option[A], Option[B])] = other match {
     case other: GenericRLELongRangeMap[B] =>
+      // the strategy here is:
+      // 1.) simply merge both maps
+      // 2.) create an intermediary map
+      // 3.) normalize this intermediary map
+      // 4.) create the final map using the results from normalization
+
       val newSize = starts.length + other.starts.length
+
       val mergedStarts = new Array[Long](newSize)
       val mergedLengths = new Array[Long](newSize)
       val mergedAValues = new Array[A](newSize)
@@ -161,14 +168,14 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
       def takeA = {
         mergedStarts (resIdx) = starts(aIdx)
         mergedLengths(resIdx) = lengths(aIdx)
-        mergedAValues(resIdx) = valueAt(aIdx)//.asInstanceOf[AnyRef]
+        mergedAValues(resIdx) = valueAt(aIdx)
 
         aIdx += 1
       }
       def takeB = {
         mergedStarts (resIdx) = other.starts(bIdx)
         mergedLengths(resIdx) = other.lengths(bIdx)
-        mergedBValues(resIdx) = other.valueAt(bIdx)//.asInstanceOf[AnyRef]
+        mergedBValues(resIdx) = other.valueAt(bIdx)
 
         bIdx += 1
       }
@@ -230,7 +237,6 @@ class LongRangeMapBuilder[A: ClassManifest] {
     entries += ((from, to - from, value))
     this
   }
-
 
   def toLongRangeMap: LongRangeMap[A] = {
     val sorted = entries.sortBy(_._1)
