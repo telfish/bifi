@@ -98,7 +98,7 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
   def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)] = new Traversable[(Long, Long, B)] {
     def foreach[U](f: ((Long, Long, B)) => U) {
       /*
-       * The strategy to find overlaps here is this:
+       * The normalization strategy here is this:
        *  - go forward through the list of intervals
        *  - for each interval first look, how many of the directly following intervals lap into the current one
        *  - with this list of overlapping intervals do the following:
@@ -201,6 +201,7 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
           case element :: Nil                            => element
           case (Some(a), None) :: (None, Some(b)) :: Nil => (Some(a), Some(b))
           case (None, Some(b)) :: (Some(a), None) :: Nil => (Some(a), Some(b))
+          case _                                         => throw new IllegalStateException("May not happen by definition of normalize")
         }
 
       for ((start, end, (a, b)) <- normalized) {
