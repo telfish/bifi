@@ -5,7 +5,11 @@ sealed trait SetExpr[+T]
 
 object SetExpr {
   case class Single[T](t: T) extends SetExpr[T]
-  case class Several[T](t: List[T]) extends SetExpr[T]
+  case class Several[T](t: Set[T]) extends SetExpr[T]
+  object Several {
+    def apply[T](els: T*): Several[T] = Several(els.toSet)
+  }
+
   case object All extends SetExpr[Nothing]
 
   trait HasTuplizer[X] {

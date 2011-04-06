@@ -27,14 +27,14 @@ object ConcreteDomainSpecs extends Specification with ScalaCheck {
     }
     "range" in {
       DaysDomain.range(All) must be_==(List((0, 3)))
-      DaysDomain.range(Several(List(Monday, Wednesday))) must be_==(List((0, 1), (2, 3)))
+      DaysDomain.range(Several(Monday, Wednesday)) must be_==(List((0, 1), (2, 3)))
     }
     "rangeify" in {
-      DaysDomain.rangeify((1, 3)) must be_==(List(Several(List(Tuesday, Wednesday))))
+      DaysDomain.rangeify((1, 3)) must be_==(List(Several(Tuesday, Wednesday)))
     }
 
     "simplify several single consecutive elements" in {
-      DaysDomain.range(Several(List(Monday, Tuesday, Wednesday))) must be_==(List((0, 3)))
+      DaysDomain.range(Several(Monday, Tuesday, Wednesday)) must be_==(List((0, 3)))
     }
   }
 

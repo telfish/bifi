@@ -13,7 +13,7 @@ class EnumDomain[T](values: IndexedSeq[T]) extends RangeDomain[T, SetExpr[T]] {
   def rangeify(range: (Long, Long)): List[SetExpr[T]] = List(range match {
     case (0, Size)            => SetExpr.All
     case (a, b) if a + 1 == b => SetExpr.Single(elementAt(a))
-    case (a, b) if a < b      => SetExpr.Several((a until b) map elementAt toList)
+    case (a, b) if a < b      => SetExpr.Several((a until b) map elementAt toSet)
   })
 
   def range(expr: SetExpr[T]): List[(Long, Long)] = expr match {
@@ -22,7 +22,7 @@ class EnumDomain[T](values: IndexedSeq[T]) extends RangeDomain[T, SetExpr[T]] {
       var curStart = -2L
       var last = -2L
       val res = new ArrayBuffer[(Long, Long)]
-      xs.map(indexOf).sorted foreach { idx =>
+      xs.map(indexOf).toList.sorted.foreach { idx =>
         if (idx == last + 1L) {
           last = idx
         } else {
