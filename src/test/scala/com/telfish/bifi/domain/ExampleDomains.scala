@@ -3,14 +3,7 @@ package com.telfish.bifi.domain
 import org.scalacheck.{Gen, Arbitrary}
 
 trait ExampleDomains {
-  case class SimpleDomain(size: Long) extends RangeDomain[Char, RangeExpr[Char]] {
-    def elementAt(pos: Long): Char = ('a' + pos).toChar
-    def indexOf(t: Char): Long = t - 'a'
-
-    def range(expr: RangeExpr[Char]): List[(Long, Long)] = RangeExpr.rangeByExpr[Char](expr, this)
-
-    def rangeify(range: (Long, Long)): List[RangeExpr[Char]] = List(RangeExpr.exprByRange(range, this))
-
+  case class SimpleDomain(override val size: Long) extends NumericRangeDomain[Char]('a', ('a' + size).toChar) {
     type V = ExampleDomains#Value[Char, this.type]
   }
 
