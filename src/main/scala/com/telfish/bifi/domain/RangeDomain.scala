@@ -15,6 +15,8 @@ trait RangeDomain[T, R] extends Domain[T] {
 
   def rangeify(range: (Long, Long)): List[R]
 
+  def mergeRanges(ranges: List[R]): List[R]
+
   def valuesInRange(expr: R): Traversable[T] = range(expr).flatMap {
     case (start, end) => (start until end) map elementAt
   }

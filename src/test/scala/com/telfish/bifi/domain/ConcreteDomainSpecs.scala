@@ -36,6 +36,27 @@ object ConcreteDomainSpecs extends Specification with ScalaCheck {
     "simplify several single consecutive elements" in {
       DaysDomain.range(Several(Monday, Tuesday, Wednesday)) must be_==(List((0, 3)))
     }
+
+    "merge ranges" in {
+      "single to several" in {
+        val rangeA = Single(Monday)
+        val rangeB = Single(Tuesday)
+
+        DaysDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(Several(Monday, Tuesday)))
+      }
+      "single + several to several" in {
+        val rangeA = Single(Monday)
+        val rangeB = Several(Tuesday)
+
+        DaysDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(Several(Monday, Tuesday)))
+      }
+      "single + several to All" in {
+        val rangeA = Single(Monday)
+        val rangeB = Several(Tuesday, Wednesday)
+
+        DaysDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(All))
+      }
+    }
   }
 
   "NumericRangeDomains" should {
@@ -58,6 +79,27 @@ object ConcreteDomainSpecs extends Specification with ScalaCheck {
     }
     "rangeify" in {
       MinuteDomain.rangeify((25, 50)) must be_==(List(Range(25, 49)))
+    }
+
+    "merge ranges" in {
+      "single to range" in {
+        val rangeA = Single(0)
+        val rangeB = Single(1)
+
+        MinuteDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(Range(0, 1)))
+      }
+      "single + range to range" in {
+        val rangeA = Single(0)
+        val rangeB = Range(1, 10)
+
+        MinuteDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(Range(0, 10)))
+      }
+      "single + range to All" in {
+        val rangeA = Single(0)
+        val rangeB = Range(1, 59)
+
+        MinuteDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(All))
+      }
     }
   }
 }

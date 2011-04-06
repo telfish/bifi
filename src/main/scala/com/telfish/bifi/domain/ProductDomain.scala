@@ -49,7 +49,7 @@ case class ProductDomain[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomai
           val end   = start + d2.size
           def e(end: Long): Long = if (end == 0) d2.size else end
           val r     = (math.max(start, range._1) % d2.size,
-                       e(math.min(end  , range._2) % d2.size))
+                       e(math.min(end, range._2) % d2.size))
 
           d2.rangeify(r) map {
             r2 => (d1.single(v1), r2)
@@ -57,6 +57,25 @@ case class ProductDomain[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomai
         }
       }
     }
+  }
+
+  private def mergeTwo(first: (R1, R2), second: (R1, R2)): List[(R1, R2)] = {
+    val merged2 = d2.mergeRanges(List(first._2, second._2))
+
+    d1.mergeRanges(List(first._1, second._1)) match {
+      case Nil => throw new java.lang.IllegalStateException("should never return Nil")
+      case r1::Nil => merged2 map (r2 => (r1, r2))
+      case several =>
+        if (merged2.size == 1)
+          several map (r1 => (r1, merged2.head))
+        else
+          List(first, second)
+    }
+  }
+  def mergeRanges(ranges: List[(R1, R2)]): List[(R1, R2)] = ranges match {
+    case Nil         => Nil
+    case one::Nil    => one::Nil
+    case first::rest => mergeRanges(rest) flatMap (mergeTwo(_, first))
   }
 }
 

@@ -3,7 +3,6 @@ package domain
 
 import collection.mutable.ArrayBuffer
 
-
 class EnumDomain[T](values: IndexedSeq[T]) extends RangeDomain[T, SetExpr[T]] {
   def elementAt(pos: Long): T = values(pos.toInt)
   def indexOf(t: T): Long = values.indexOf(t)
@@ -36,6 +35,38 @@ class EnumDomain[T](values: IndexedSeq[T]) extends RangeDomain[T, SetExpr[T]] {
         res += ((curStart, last + 1L))
       res.toList
     case SetExpr.All         => List((0, size))
+  }
+
+  import SetExpr._
+  private def mergeTwo(first: SetExpr[T], second: SetExpr[T]): SetExpr[T] = {
+    def newSeveral(s: Set[T]): SetExpr[T] =
+      if (s.size == Size)
+        All
+      else
+        Several(s)
+
+    (first, second) match {
+      case (a, b) if a == b => a
+      case (Single(a), Single(b)) =>
+        if (a == b)
+          Single(a)
+        else
+          newSeveral(Set(a, b))
+
+      case (Single(a), Several(others)) => newSeveral(others + a)
+      case (Several(others), Single(a)) => newSeveral(others + a)
+
+      case (Several(as), Several(bs)) =>
+        newSeveral(as union bs)
+
+      case (a, b) if a == All || b == All => All
+    }
+  }
+
+  def mergeRanges(ranges: List[SetExpr[T]]): List[SetExpr[T]] = ranges match {
+    case Nil         => Nil
+    case one::Nil    => one::Nil
+    case first::rest => mergeRanges(rest) map (mergeTwo(_, first))
   }
 }
 

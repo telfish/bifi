@@ -2,7 +2,7 @@ package com.telfish.bifi.domain
 
 import org.specs.{ScalaCheck, Specification}
 import org.scalacheck.{Prop, Gen}
-import org.specs.specification.PendingUntilFixed
+import org.specs.specification.{Example, PendingUntilFixed}
 
 object DomainSpecs extends Specification with ScalaCheck with ExampleDomains with PendingUntilFixed {
   noDetailedDiffs()
@@ -72,7 +72,10 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
           }
         }
       }
+
+      null: Example
     }
+
     "properly span up a 3-dim space" in {
       val myDomain = domainA × domainB × domainC // map ({ case ((a, b), c) => (a, b, c) }, { case (a, b, c) => ((a, b), c) })
 
@@ -146,8 +149,35 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
           }
           roundTrip must pass
         } pendingUntilFixed
+
+        null: Example
+      }
+      "merge ranges" in {
+        "at the beginning to all" in {
+          val rangeA = ((Single(a), Single(c)), All)
+          val rangeB = ((Single(b), Single(c)), All)
+
+          myDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(((All, Single(c)), All)))
+        }
+
+        "at the end to range" in {
+          val rangeA = ((All, Single(c)), Single(b))
+          val rangeB = ((All, Single(c)), Single(c))
+
+          myDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(((All, Single(c)), Range(b, c))))
+        }
+
+        "at the end to all" in {
+          val rangeA = ((All, Single(c)), Range(a, b))
+          val rangeB = ((All, Single(c)), Single(c))
+          val rangeC = ((All, Single(c)), Single(d))
+
+          myDomain.mergeRanges(List(rangeA, rangeB, rangeC)) must be_==(List(((All, Single(c)), All)))
+        }
       }
     }
+
+    null: Example
   }
 
   def checkIdentities[T](myDomain: Domain[T]) = {
