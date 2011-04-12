@@ -180,8 +180,8 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
           val rangeC = ((All, Single(d)), Single(d))
 
           myDomain.mergeRanges(List(rangeA, rangeB, rangeC)) must be_==(List(
-            ((All, Single(c)), Range(a, c)),
-            ((All, Single(d)), Single(d))
+            ((All, Single(d)), Single(d)),
+            ((All, Single(c)), Range(a, c))
           ))
         }
 
