@@ -18,6 +18,8 @@ trait DomainMap[T, R, A] {
   def gaps: List[R]
   def overlaps: List[(R, List[A])]
 
+  def normalize[B: ClassManifest](merge: List[A] => B): DomainMap[T, R, B]
+
   def |[B: ClassManifest](other: DomainMap[T, R, B]): RangeMap[R, (Option[A], Option[B])]
 }
 
