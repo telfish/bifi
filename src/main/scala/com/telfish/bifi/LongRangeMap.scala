@@ -137,7 +137,8 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
             .sorted)
 
         events.sliding(2) foreach { case List(start, end) =>
-          val active = overlappingIdxs filter (idx => starts(idx) <= start && ends(idx) >= end )
+          val active = overlappingIdxs filter (idx => (starts(idx) <= start) && (ends(idx) >= end))
+          assert (active.size > 0)
 
           add(math.max(curEnd, start), end, merge(active map valueAt toList))
         }
@@ -203,7 +204,10 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
           case element :: Nil                            => element
           case (Some(a), None) :: (None, Some(b)) :: Nil => (Some(a), Some(b))
           case (None, Some(b)) :: (Some(a), None) :: Nil => (Some(a), Some(b))
-          case _                                         => throw new IllegalStateException("May not happen by definition of normalize")
+          // TODO: we have overlaps in the definition spaces of the map
+          // for now we just ignore most of the stuff, think about what todo here
+          case element :: _ => element
+          case _            => throw new IllegalStateException("May not happen by definition of normalize")
         }
 
       normalized
