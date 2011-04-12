@@ -21,7 +21,9 @@ class LongBasedDomainMap[T, R, A: ClassManifest](val domain: RangeDomain[T, R], 
   }
 
   def normalize[B: ClassManifest](merge: (List[A]) => B): DomainMap[T, R, B] = {
-    val normalized = theMap.normalize(merge)
+    val normalized = theMap.normalize(merge) map {
+      case (s, e, v) => (s, e - s, v)
+    }
     new LongBasedDomainMap(domain, RLELongRangeMap.fromSortedEntries(normalized))
   }
 
