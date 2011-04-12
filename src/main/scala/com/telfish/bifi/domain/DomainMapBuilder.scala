@@ -14,10 +14,18 @@ class LongBasedDomainMap[T, R, A: ClassManifest](val domain: RangeDomain[T, R], 
 
   def cardinality: Int = theMap.cardinality
 
-  def |[B: ClassManifest](other: DomainMap[T, R, B]): Traversable[(R, (Option[A], Option[B]))] = other match {
+  def |[B: ClassManifest](other: DomainMap[T, R, B]): RangeMap[R, (Option[A], Option[B])] = other match {
     case l: LongBasedDomainMap[T, R, B] =>
-        (theMap | l.theMap) flatMap { case (s, e, values) => domain.rangeify(s, e) map ((_, values)) }
+        new DomainRangeMap(theMap | l.theMap) flatMapRange { case (s, e) => domain.rangeify(s, e) }
     case _ => throw new UnsupportedOperationException("| not supported with DomainMaps other than LongBasedDomainMaps")
+  }
+
+  class DomainRangeMap[A](indexMap: Traversable[(Long, Long, A)]) extends RangeMap[(Long, Long), A] {
+    def foreach[U](f: (((Long, Long), A)) => U) {
+      indexMap foreach {
+        case (s, e, a) => f(((s, e), a))
+      }
+    }
   }
 }
 
