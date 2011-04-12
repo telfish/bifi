@@ -13,6 +13,12 @@ class LongBasedDomainMap[T, R, A: ClassManifest](val domain: RangeDomain[T, R], 
   def get(l: T): Option[A] = theMap.get(domain.indexOf(l))
 
   def cardinality: Int = theMap.cardinality
+
+  def |[B: ClassManifest](other: DomainMap[T, R, B]): Traversable[(R, (Option[A], Option[B]))] = other match {
+    case l: LongBasedDomainMap[T, R, B] =>
+        (theMap | l.theMap) flatMap { case (s, e, values) => domain.rangeify(s, e) map ((_, values)) }
+    case _ => throw new UnsupportedOperationException("| not supported with DomainMaps other than LongBasedDomainMaps")
+  }
 }
 
 class DomainMapBuilder[T, R, A: ClassManifest](val domain: RangeDomain[T, R]) { builder =>
