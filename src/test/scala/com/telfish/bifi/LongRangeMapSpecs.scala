@@ -157,7 +157,7 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
 
         val defined = Some("defined")
 
-        (map | checkMap).traverse.toList must be_==(List(
+        (map | checkMap).toList must be_==(List(
                t("**                  ", (Some("test"),   None)),
                t("  *                 ", (Some("test"),   defined)),
                t("   **               ", (None,           defined)),

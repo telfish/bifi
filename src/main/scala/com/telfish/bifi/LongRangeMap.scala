@@ -34,7 +34,7 @@ trait LongRangeMap[+A] {
    * Similar to ×. Returns a long range map where
    *  get(l) == (this.get(l), other.get(l))
    */
-  def |[B: ClassManifest](other: LongRangeMap[B]): LongRangeMap[(Option[A], Option[B])]
+  def |[B: ClassManifest](other: LongRangeMap[B]): Traversable[(Long, Long, (Option[A], Option[B]))]
 
   def traverse: Traversable[(Long, Long, A)]
 }
@@ -146,7 +146,7 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
 
   def cardinality: Int = size
 
-  def |[B: ClassManifest](other: LongRangeMap[B]): LongRangeMap[(Option[A], Option[B])] = other match {
+  def |[B: ClassManifest](other: LongRangeMap[B]): Traversable[(Long, Long, (Option[A], Option[B]))] = other match {
     case other: GenericRLELongRangeMap[B] =>
       // the strategy here is:
       // 1.) simply merge both maps
@@ -204,14 +204,7 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
           case _                                         => throw new IllegalStateException("May not happen by definition of normalize")
         }
 
-      for ((start, end, (a, b)) <- normalized) {
-        resultStarts  += start
-        resultLengths += end - start
-        resultAValues += a.getOrElse(null.asInstanceOf[A])
-        resultBValues += b.getOrElse(null.asInstanceOf[B])
-      }
-
-      new Tuple2OptionRLELongRangeMap[A, B](resultStarts.toArray, resultLengths.toArray, resultAValues.toArray, resultBValues.toArray)
+      normalized
 
     case _ => throw new UnsupportedOperationException("| only supported with other RLELongRangeMaps")
   }
