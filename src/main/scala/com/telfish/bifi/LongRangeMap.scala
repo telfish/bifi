@@ -97,6 +97,14 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
    */
   def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)] = new Traversable[(Long, Long, B)] {
     def foreach[U](f: ((Long, Long, B)) => U) {
+      def add(start: Long, end: Long, value: B): Unit = {
+        assert(start <= end)
+
+        if (start < end)
+          f((start, end, value))
+      }
+
+
       /*
        * The normalization strategy here is this:
        *  - go forward through the list of intervals
@@ -132,7 +140,7 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
         events.sliding(2) foreach { case List(start, end) =>
           val active = overlappingIdxs filter (idx => starts(idx) <= start && ends(idx) >= end )
 
-          f((math.max(curEnd, start), end, merge(active map valueAt toList)))
+          add(math.max(curEnd, start), end, merge(active map valueAt toList))
         }
 
         i = ends.indexWhere(_ > thisEnd, i + 1) foundOrElse size
@@ -140,7 +148,7 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
       }
 
       if (i < size)
-        f((math.max(curEnd, starts(i)), ends(i), merge(List(valueAt(i)))))
+        add(math.max(curEnd, starts(i)), ends(i), merge(List(valueAt(i))))
     }
   }
 
