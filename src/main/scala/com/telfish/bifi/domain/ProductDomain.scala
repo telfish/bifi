@@ -70,7 +70,20 @@ case class ProductDomain[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomai
   def mergeRanges(ranges: List[(R1, R2)]): List[(R1, R2)] = ranges match {
     case Nil         => Nil
     case one::Nil    => one::Nil
-    case first::rest => mergeRanges(rest) flatMap (mergeTwo(_, first))
+    case first::rest =>
+      val by1 = ranges.groupBy(_._1).toList
+      val by2 = ranges.groupBy(_._2).toList
+
+      if (by1.size < by2.size)
+        by1 flatMap {
+          case (first, others) =>
+            d2.mergeRanges(others.map(_._2)).map((first, _))
+        }
+      else
+        by2 flatMap {
+          case (second, others) =>
+            d1.mergeRanges(others.map(_._1)).map((_, second))
+        }
   }
 }
 

@@ -174,13 +174,23 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
 
           myDomain.mergeRanges(List(rangeA, rangeB, rangeC)) must be_==(List(((All, Single(c)), All)))
         }
+        "merge partly" in {
+          val rangeA = ((All, Single(c)), Range(a, b))
+          val rangeB = ((All, Single(c)), Single(c))
+          val rangeC = ((All, Single(d)), Single(d))
+
+          myDomain.mergeRanges(List(rangeA, rangeB, rangeC)) must be_==(List(
+            ((All, Single(c)), Range(a, c)),
+            ((All, Single(d)), Single(d))
+          ))
+        }
 
         "don't merge if other elements don't match" in {
           "at the end" in {
             val rangeA = ((All, Single(b)), Single(b))
             val rangeB = ((All, Single(c)), Single(c))
 
-            myDomain.mergeRanges(List(rangeA, rangeB)) must containAll(List(
+            myDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(
               rangeA, rangeB
             ))
           }
@@ -188,7 +198,7 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
             val rangeA = ((Single(a), All), Single(b))
             val rangeB = ((Single(b), All), Single(c))
 
-            myDomain.mergeRanges(List(rangeA, rangeB)) must containAll(List(
+            myDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(
               rangeA, rangeB
             ))
           }
@@ -196,7 +206,7 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
             val rangeA = ((Single(a), Single(b)), All)
             val rangeB = ((Single(b), Single(c)), All)
 
-            myDomain.mergeRanges(List(rangeA, rangeB)) must containAll(List(
+            myDomain.mergeRanges(List(rangeA, rangeB)) must be_==(List(
               rangeA, rangeB
             ))
           }
