@@ -218,6 +218,15 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
 class RLELongRangeMap[A: ClassManifest](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends GenericRLELongRangeMap[A](starts, lengths) {
   def valueAt(i: Int): A = values(i)
 }
+object RLELongRangeMap {
+  def fromSortedEntries[A: ClassManifest](entries: Traversable[(Long, Long, A)]): RLELongRangeMap[A] = {
+    val starts  = entries.view.map(_._1).toArray
+    val lengths = entries.view.map(_._2).toArray
+    val values  = entries.view.map(_._3).toArray
+
+    new RLELongRangeMap(starts, lengths, values)
+  }
+}
 
 class Tuple2OptionRLELongRangeMap[A, B](starts: Array[Long], lengths: Array[Long], valuesA: Array[A], valuesB: Array[B]) extends GenericRLELongRangeMap[(Option[A], Option[B])](starts, lengths) {
   def valueAt(i: Int): (Option[A], Option[B]) = (Option(valuesA(i)), Option(valuesB(i)))
@@ -237,11 +246,7 @@ class LongRangeMapBuilder[A: ClassManifest] {
   def toLongRangeMap: LongRangeMap[A] = {
     val sorted = entries.sortBy(_._1)
 
-    val starts = sorted.view.map(_._1).toArray
-    val lengths = sorted.view.map(_._2).toArray
-    val values = sorted.view.map(_._3).toArray
-
-    new RLELongRangeMap(starts, lengths, values)
+    RLELongRangeMap.fromSortedEntries(sorted)
   }
 }
 
