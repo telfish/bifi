@@ -181,7 +181,7 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
       }
 
       while (resIdx < newSize) {
-        if (bIdx >= other.starts.length || starts(aIdx) <= other.starts(bIdx))
+        if (bIdx >= other.starts.length || (aIdx < starts.length && starts(aIdx) <= other.starts(bIdx)))
           takeA
         else
           takeB
