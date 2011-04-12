@@ -29,7 +29,6 @@ trait LongRangeMap[+A] {
 
   protected[bifi] def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)]
 
-
   /**
    * Similar to ×. Returns a long range map where
    *  get(l) == (this.get(l), other.get(l))
@@ -198,11 +197,6 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
       }
 
       val intermediary = new Tuple2OptionRLELongRangeMap(mergedStarts, mergedLengths, mergedAValues, mergedBValues)
-
-      val resultStarts = new ArrayBuffer[Long](newSize)
-      val resultLengths = new ArrayBuffer[Long](newSize)
-      val resultAValues = new ArrayBuffer[A](newSize)
-      val resultBValues = new ArrayBuffer[B](newSize)
 
       val normalized =
         intermediary.normalize {
