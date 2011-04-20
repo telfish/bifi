@@ -19,4 +19,10 @@ object SetExpr {
   implicit def tuplize[T](x: T): HasTuplizer[T] = new HasTuplizer[T] {
     def ~[U](next: U): (T, U) = (x, next)
   }
+
+  def toString[T](name: String)(format: T => String)(expr: SetExpr[T]): String = expr match {
+    case Single(l)   => format(l)
+    case Several(ls) => ls.map(l => toString(name)(format)(Single(l))).mkString(", ")
+    case All         => "all "+name
+  }
 }
