@@ -2,6 +2,22 @@ package com.telfish.bifi
 
 import java.util.Arrays
 import collection.mutable.{ListBuffer, ArrayBuffer}
+import annotation.elidable
+
+object Output {
+  var last: Long = -1
+  @elidable(elidable.FINEST)
+  def tick(str: String) = {
+    val now = System.currentTimeMillis
+    if (last != -1)
+      println("+%5d %10d %s" format (now - last, now, str))
+    else
+      println("       %10d %s" format (now, str))
+
+    last = now
+  }
+}
+import Output.tick
 
 /**
  * A long range map maps a long value to an arbitrary value.
@@ -103,6 +119,7 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
           f((start, end, value))
       }
 
+      tick("In normalize.foreach")
 
       /*
        * The normalization strategy here is this:
@@ -149,6 +166,8 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
 
       if (i < size)
         add(math.max(curEnd, starts(i)), ends(i), merge(List(valueAt(i))))
+
+      tick("After normalize.foreach")
     }
   }
 
@@ -188,6 +207,8 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
         bIdx += 1
       }
 
+      tick("Before merging")
+
       while (resIdx < newSize) {
         if (bIdx >= other.starts.length || (aIdx < starts.length && starts(aIdx) <= other.starts(bIdx)))
           takeA
@@ -197,7 +218,11 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
         resIdx += 1
       }
 
+      tick("After merging")
+
       val intermediary = new Tuple2OptionRLELongRangeMap(mergedStarts, mergedLengths, mergedAValues, mergedBValues)
+
+      tick("before normalizing")
 
       val normalized =
         intermediary.normalize {
@@ -224,9 +249,11 @@ class RLELongRangeMap[A: ClassManifest](starts: Array[Long], lengths: Array[Long
 }
 object RLELongRangeMap {
   def fromSortedEntries[A: ClassManifest](entries: Traversable[(Long, Long, A)]): RLELongRangeMap[A] = {
+    tick("Starting fromSortedEntries")
     val starts  = entries.view.map(_._1).toArray
     val lengths = entries.view.map(_._2).toArray
     val values  = entries.view.map(_._3).toArray
+    tick("After fromSortedEntries created arrays")
 
     new RLELongRangeMap(starts, lengths, values)
   }
