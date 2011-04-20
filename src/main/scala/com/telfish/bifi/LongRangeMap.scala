@@ -141,26 +141,32 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
 
         val thisEnd = ends(i)
 
-        val nextStart = starts.indexWhere(_ >= thisEnd, i + 1)
-        val endIndex = nextStart foundOrElse size
+        if (starts(i + 1) < ends(i)) {
+          val nextStart = starts.indexWhere(_ >= thisEnd, i + 1)
+          val endIndex = nextStart foundOrElse size
 
-        val overlappingIdxs = (i until endIndex)
-        val events =
-          (overlappingIdxs
-            .flatMap(idx => List(starts(idx), ends(idx)))
-            .toSet
-            .filter(_ <= thisEnd)
-            .toList
-            .sorted)
+          val overlappingIdxs = (i until endIndex)
+          val events =
+            (overlappingIdxs
+              .flatMap(idx => List(starts(idx), ends(idx)))
+              .toSet
+              .filter(_ <= thisEnd)
+              .toList
+              .sorted)
 
-        events.sliding(2) foreach { case List(start, end) =>
-          val active = overlappingIdxs filter (idx => (starts(idx) <= start) && (ends(idx) >= end))
-          assert (active.size > 0)
+          events.sliding(2) foreach { case List(start, end) =>
+            val active = overlappingIdxs filter (idx => (starts(idx) <= start) && (ends(idx) >= end))
+            assert (active.size > 0)
 
-          add(math.max(curEnd, start), end, merge(active map valueAt toList))
+            add(math.max(curEnd, start), end, merge(active map valueAt toList))
+          }
+
+          i = ends.indexWhere(_ > thisEnd, i + 1) foundOrElse size
         }
-
-        i = ends.indexWhere(_ > thisEnd, i + 1) foundOrElse size
+        else {
+          add(starts(i), ends(i), merge(List(valueAt(i))))
+          i += 1
+        }
         curEnd = thisEnd
       }
 
