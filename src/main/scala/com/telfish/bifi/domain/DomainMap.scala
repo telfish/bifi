@@ -13,6 +13,11 @@ trait DomainMap[T, R, A] {
   def get(l: T): Option[A]
 
   /**
+   * Gets the value associated with the index corresponding to a domain value
+   */
+  def getByIndex(idx: Long): Option[A]
+
+  /**
    * Reports the list of gaps in the given range
    */
   def gaps: List[R]

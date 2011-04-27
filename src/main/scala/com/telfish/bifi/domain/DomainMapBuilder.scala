@@ -10,7 +10,8 @@ class LongBasedDomainMap[T, R, A: ClassManifest](val domain: RangeDomain[T, R], 
   def overlaps: List[(R, List[A])] =
     theMap.overlaps flatMap { case (s, e, values) => domain.rangeify(s, e) map ((_, values)) }
 
-  def get(l: T): Option[A] = theMap.get(domain.indexOf(l))
+  def get(l: T): Option[A] = getByIndex(domain.indexOf(l))
+  def getByIndex(idx: Long): Option[A] = theMap.get(idx)
 
   def cardinality: Int = theMap.cardinality
 
