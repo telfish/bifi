@@ -60,6 +60,8 @@ class EnumDomain[T](values: IndexedSeq[T]) extends RangeDomain[T, SetExpr[T]] {
         newSeveral(as union bs)
 
       case (a, b) if a == All || b == All => All
+
+      case _ => throw new IllegalStateException("Shouldn't happen")
     }
   }
 

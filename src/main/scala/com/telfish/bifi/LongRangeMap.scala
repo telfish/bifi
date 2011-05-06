@@ -180,7 +180,7 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
   def cardinality: Int = size
 
   def |[B: ClassManifest](other: LongRangeMap[B]): Traversable[(Long, Long, (Option[A], Option[B]))] = other match {
-    case other: GenericRLELongRangeMap[B] =>
+    case other: GenericRLELongRangeMap[_] =>
       // the strategy here is:
       // 1.) simply merge both maps
       // 2.) create an intermediary map

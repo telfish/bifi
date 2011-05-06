@@ -16,7 +16,7 @@ class LongBasedDomainMap[T, R, A: ClassManifest](val domain: RangeDomain[T, R], 
   def cardinality: Int = theMap.cardinality
 
   def |[B: ClassManifest](other: DomainMap[T, R, B]): RangeMap[R, (Option[A], Option[B])] = other match {
-    case l: LongBasedDomainMap[T, R, B] =>
+    case l: LongBasedDomainMap[_, _, _] =>
         new DomainRangeMap(theMap | l.theMap) flatMapRange { case (s, e) => domain.rangeify(s, e) }
     case _ => throw new UnsupportedOperationException("| not supported with DomainMaps other than LongBasedDomainMaps")
   }
