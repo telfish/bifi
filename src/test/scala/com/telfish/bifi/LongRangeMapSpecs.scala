@@ -168,6 +168,30 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
         ))
       }
     }
+
+    "`++` with another map" in {
+        val map1 =
+          Builder[String]
+            .add("***                 ", "test")
+            .toLongRangeMap
+
+        val map2 =
+          Builder[String]
+            .add("            ***     ", "test2")
+            .toLongRangeMap
+
+        val defined = Some("defined")
+
+        (map1 ++ map2).traverse.toList must be_==(List(
+               t("***                 ", "test"),
+               t("            ***     ", "test2")
+        ))
+
+        (map2 ++ map1).traverse.toList must be_==(List(
+               t("***                 ", "test"),
+               t("            ***     ", "test2")
+        ))
+    }
   }
 
   def Builder[A: ClassManifest]: GraphicBuilder[A] = new GraphicBuilder[A]

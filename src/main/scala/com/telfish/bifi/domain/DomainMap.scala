@@ -27,6 +27,8 @@ trait DomainMap[T, R, A] {
 
   def |[B: ClassManifest](other: DomainMap[T, R, B]): RangeMap[R, (Option[A], Option[B])]
 
+  def ++(other: DomainMap[T, R, A]): DomainMap[T, R, A]
+
   def map[B: ClassManifest](f: A => B): DomainMap[T, R, B]
 }
 

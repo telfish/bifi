@@ -50,6 +50,7 @@ trait LongRangeMap[+A] {
    *  get(l) == (this.get(l), other.get(l))
    */
   def |[B: ClassManifest](other: LongRangeMap[B]): Traversable[(Long, Long, (Option[A], Option[B]))]
+  def ++[B >: A: ClassManifest](other: LongRangeMap[B]): LongRangeMap[B]
 
   def traverse: Traversable[(Long, Long, A)]
 
@@ -247,6 +248,51 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
 
       normalized
 
+    case _ => throw new UnsupportedOperationException("| only supported with other RLELongRangeMaps")
+  }
+
+  def ++[B >: A: ClassManifest](other: LongRangeMap[B]): LongRangeMap[B] = other match {
+    case other: GenericRLELongRangeMap[_] =>
+
+      val newSize = starts.length + other.starts.length
+
+      val mergedStarts = new Array[Long](newSize)
+      val mergedLengths = new Array[Long](newSize)
+      val mergedValues = new Array[B](newSize)
+
+      var aIdx   = 0
+      var bIdx   = 0
+      var resIdx = 0
+
+      def takeA = {
+        mergedStarts (resIdx) = starts(aIdx)
+        mergedLengths(resIdx) = lengths(aIdx)
+        mergedValues (resIdx) = valueAt(aIdx)
+
+        aIdx += 1
+      }
+      def takeB = {
+        mergedStarts (resIdx) = other.starts(bIdx)
+        mergedLengths(resIdx) = other.lengths(bIdx)
+        mergedValues (resIdx) = other.valueAt(bIdx)
+
+        bIdx += 1
+      }
+
+      tick("Before merging")
+
+      while (resIdx < newSize) {
+        if (bIdx >= other.starts.length || (aIdx < starts.length && starts(aIdx) <= other.starts(bIdx)))
+          takeA
+        else
+          takeB
+
+        resIdx += 1
+      }
+
+      tick("After merging")
+
+      new RLELongRangeMap(mergedStarts, mergedLengths, mergedValues)
     case _ => throw new UnsupportedOperationException("| only supported with other RLELongRangeMaps")
   }
 
