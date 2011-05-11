@@ -35,6 +35,8 @@ class LongBasedDomainMap[T, R, A: ClassManifest](val domain: RangeDomain[T, R], 
       }
     }
   }
+
+  def map[B: ClassManifest](f: (A) => B): DomainMap[T, R, B] = new LongBasedDomainMap(domain, theMap.map(f))
 }
 
 class DomainMapBuilder[T, R, A: ClassManifest](val domain: RangeDomain[T, R]) { builder =>

@@ -52,10 +52,14 @@ trait LongRangeMap[+A] {
   def |[B: ClassManifest](other: LongRangeMap[B]): Traversable[(Long, Long, (Option[A], Option[B]))]
 
   def traverse: Traversable[(Long, Long, A)]
+
+  def map[B: ClassManifest](f: A => B): LongRangeMap[B]
 }
 
 abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Array[Long], protected val lengths: Array[Long]) extends LongRangeMap[A]{
   def valueAt(i: Int): A
+
+  def values: Seq[A] = (0 until cardinality) map valueAt
 
   val size = starts.length
 
@@ -248,6 +252,8 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
 
   def traverse: Traversable[(Long, Long, A)] =
     (0 until cardinality).view map (i => (starts(i), ends(i), valueAt(i)))
+
+  def map[B: ClassManifest](f: A => B): LongRangeMap[B] = new RLELongRangeMap(starts, lengths, values map f toArray)
 }
 
 class RLELongRangeMap[A: ClassManifest](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends GenericRLELongRangeMap[A](starts, lengths) {
