@@ -40,14 +40,14 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
       "calculate proper ranges indices" in {
 
         "if last one is single" in {
-          val range = myDomain.range((Range(a, b), Single(a)))
+          val range = myDomain.range((Range(a, b), Single(a))).toList
 
-          range must be_==(List((0, 1), (3, 4)))
+          range must containAll(List((0, 1), (3, 4)))
         }
         "if last one is All" in {
-          val range = myDomain.range((Range(a, b), All))
+          val range = myDomain.range((Range(a, b), All)).toList
 
-          range must be_==(List((0, 6)))
+          range must containAll(List((0, 6)))
         }
       }
 
@@ -101,14 +101,14 @@ object DomainSpecs extends Specification with ScalaCheck with ExampleDomains wit
 
       "calculate proper range indices" in {
         "for ranges" in {
-          val range = myDomain.range(((Range(a, b), Range(a, b)), Range(a, b)))
+          val range = myDomain.range(((Range(a, b), Range(a, b)), Range(a, b))).toList
 
-          range must be_==(List((0, 2), (4, 6), (12, 14), (16, 18)))
+          range must containAll(List((0, 2), (4, 6), (12, 14), (16, 18)))
         }
         "for complete domains" in {
-          val range = myDomain.range(((All, Range(a, b)), All))
+          val range = myDomain.range(((All, Range(a, b)), All)).toList
 
-          range must be_==(List((0, 8), (12, 20)))
+          range must containAll(List((0, 8), (12, 20)))
         }
       }
 

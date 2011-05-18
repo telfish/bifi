@@ -17,18 +17,28 @@ case class ProductDomain[T1, T2, R1, R2](d1: RangeDomain[T1, R1], d2: RangeDomai
 
   def size: Long = d1.size * d2.size
 
-  def range(expr: (R1, R2)): List[(Long, Long)] = {
-    def product(start1: Long, end1: Long, start2: Long, end2: Long): Traversable[(Long, Long)] =
-      if (start2 == 0 && end2 == d2.size)
-        List((start1 * d2.size, end1 * d2.size))
-      else
-        (start1 until end1) map (i1 => (i1 * d2.size + start2, i1 * d2.size + end2))
+  def range(expr: (R1, R2)): Traversable[(Long, Long)] = {
+    val range1 = d1.range(expr._1)
+    val range2 = d2.range(expr._2)
 
-    for { (start1, end1) <- d1.range(expr._1)
-          (start2, end2) <- d2.range(expr._2)
-          p              <- product(start1, end1, start2, end2)
+    new Traversable[(Long, Long)] {
+      def foreach[U](f: ((Long, Long)) => U) {
+        def productX(start1: Long, end1: Long, start2: Long, end2: Long): Unit =
+          if (start2 == 0 && end2 == d2.size)
+            f((start1 * d2.size, end1 * d2.size))
+          else {
+            (start1 until end1).foreach  { i1 =>
+              f((i1 * d2.size + start2, i1 * d2.size + end2))
+            }
+          }
+
+        range1 foreach { r1 =>
+          range2 foreach { r2 =>
+            productX(r1._1, r1._2, r2._1, r2._2)
+          }
         }
-      yield p
+      }
+    }
   }
 
   def rangeify(range: (Long, Long)): List[(R1, R2)] = {

@@ -11,7 +11,7 @@ trait RangeDomain[T, R] extends Domain[T] {
 
   def mapBuilder[A: ClassManifest]: DomainMapBuilder[T, R, A] = new DomainMapBuilder[T, R, A](this)
 
-  def range(expr: R): List[(Long, Long)]
+  def range(expr: R): Traversable[(Long, Long)]
 
   def rangeify(range: (Long, Long)): List[R]
 
