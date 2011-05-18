@@ -35,10 +35,5 @@ trait Domain[T] { outer =>
   }
 }
 
-/**
- * A domain where a consecutive range of values of type T corresponds to
- * a consecutive range of characteristic Long values.
- */
-
 
 
