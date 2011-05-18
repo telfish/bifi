@@ -306,11 +306,22 @@ class RLELongRangeMap[A: ClassManifest](starts: Array[Long], lengths: Array[Long
   def valueAt(i: Int): A = values(i)
 }
 object RLELongRangeMap {
-  def fromSortedEntries[A: ClassManifest](entries: Traversable[(Long, Long, A)]): RLELongRangeMap[A] = {
+  def fromSortedEntries[A: ClassManifest](entries: Iterable[Entry[A]]): RLELongRangeMap[A] = {
     tick("Starting fromSortedEntries")
-    val starts  = entries.view.map(_._1).toArray
-    val lengths = entries.view.map(_._2).toArray
-    val values  = entries.view.map(_._3).toArray
+    val size = entries.size
+    val starts  = new Array[Long](size)//entries.view.map(_.start).toArray
+    val lengths = new Array[Long](size)//entries.view.map(_.length).toArray
+    val values  = new Array[A](size)//entries.view.map(_.value).toArray
+
+    var i = 0
+
+    entries foreach { e =>
+      starts(i) = e.start
+      lengths(i) = e.length
+      values(i) = e.value
+
+      i += 1
+    }
     tick("After fromSortedEntries created arrays")
 
     new RLELongRangeMap(starts, lengths, values)
@@ -321,19 +332,20 @@ class Tuple2OptionRLELongRangeMap[A, B](starts: Array[Long], lengths: Array[Long
   def valueAt(i: Int): (Option[A], Option[B]) = (Option(valuesA(i)), Option(valuesB(i)))
 }
 
+case class Entry[A](start: Long, length: Long, value: A)
 class LongRangeMapBuilder[A: ClassManifest] {
-  type Entry = (Long, Long, A)
-  var entries = new ArrayBuffer[Entry]
+
+  var entries = new ArrayBuffer[Entry[A]]
 
   def add(from: Long, to: Long, value: A): this.type = {
     assert(from < to)
 
-    entries += ((from, to - from, value))
+    entries += Entry(from, to - from, value)
     this
   }
 
   def toLongRangeMap: LongRangeMap[A] = {
-    val sorted = entries.sortBy(_._1)
+    val sorted = entries.sortBy(_.start)
 
     RLELongRangeMap.fromSortedEntries(sorted)
   }

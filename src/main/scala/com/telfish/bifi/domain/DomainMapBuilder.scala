@@ -29,9 +29,9 @@ class LongBasedDomainMap[T, R, A: ClassManifest](val domain: RangeDomain[T, R], 
 
   def normalize[B: ClassManifest](merge: (List[A]) => B): DomainMap[T, R, B] = {
     val normalized = theMap.normalize(merge) map {
-      case (s, e, v) => (s, e - s, v)
+      case (s, e, v) => Entry[B](s, e - s, v)
     }
-    new LongBasedDomainMap(domain, RLELongRangeMap.fromSortedEntries(normalized))
+    new LongBasedDomainMap(domain, RLELongRangeMap.fromSortedEntries[B](normalized.toIterable))
   }
 
   class DomainRangeMap[A](indexMap: Traversable[(Long, Long, A)]) extends RangeMap[(Long, Long), A] {
@@ -49,7 +49,7 @@ class DomainMapBuilder[T, R, A: ClassManifest](val domain: RangeDomain[T, R]) { 
   val indexMapBuilder = new LongRangeMapBuilder[A]
 
   def add(range: R, value: A): this.type = {
-    domain.range(range) foreach { case (s, e) => indexMapBuilder.add(s, e, value) }
+    domain.range(range) foreach { r => indexMapBuilder.add(r._1, r._2, value) }
     this
   }
   def addSingle(single: T, value: A): this.type = {
