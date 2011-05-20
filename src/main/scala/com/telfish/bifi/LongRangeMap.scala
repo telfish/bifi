@@ -57,12 +57,15 @@ trait LongRangeMap[+A] {
   def map[B: ClassManifest](f: A => B): LongRangeMap[B]
 }
 
-abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Array[Long], protected val lengths: Array[Long]) extends LongRangeMap[A]{
+trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
   def valueAt(i: Int): A
+  def starts: Array[Long]
+  protected def lengths: Array[Long]
+  implicit def manifest: ClassManifest[A]
 
   def values: Seq[A] = (0 until cardinality) map valueAt
 
-  val size = starts.length
+  def size = starts.length
 
   val ends = new IndexedSeq[Long] {
     def length: Int = starts.length
@@ -302,7 +305,13 @@ abstract class GenericRLELongRangeMap[A: ClassManifest](protected val starts: Ar
   def map[B: ClassManifest](f: A => B): LongRangeMap[B] = new RLELongRangeMap(starts, lengths, values map f toArray)
 }
 
-class RLELongRangeMap[A: ClassManifest](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends GenericRLELongRangeMap[A](starts, lengths) {
+abstract class GenericRLELongRangeMapImpl[A](val starts: Array[Long], protected val lengths: Array[Long])(implicit mf: ClassManifest[A]) extends GenericRLELongRangeMap[A] {
+  implicit def manifest: ClassManifest[A] = mf
+
+  override val size = starts.length
+}
+
+class RLELongRangeMap[A: ClassManifest](starts: Array[Long], lengths: Array[Long], values: Array[A]) extends GenericRLELongRangeMapImpl[A](starts, lengths) {
   def valueAt(i: Int): A = values(i)
 }
 object RLELongRangeMap {
@@ -328,7 +337,7 @@ object RLELongRangeMap {
   }
 }
 
-class Tuple2OptionRLELongRangeMap[A, B](starts: Array[Long], lengths: Array[Long], valuesA: Array[A], valuesB: Array[B]) extends GenericRLELongRangeMap[(Option[A], Option[B])](starts, lengths) {
+class Tuple2OptionRLELongRangeMap[A, B](starts: Array[Long], lengths: Array[Long], valuesA: Array[A], valuesB: Array[B]) extends GenericRLELongRangeMapImpl[(Option[A], Option[B])](starts, lengths) {
   def valueAt(i: Int): (Option[A], Option[B]) = (Option(valuesA(i)), Option(valuesB(i)))
 }
 
