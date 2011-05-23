@@ -43,6 +43,9 @@ class LongBasedDomainMap[T, R, A: ClassManifest](val domain: RangeDomain[T, R], 
   }
 
   def map[B: ClassManifest](f: (A) => B): DomainMap[T, R, B] = new LongBasedDomainMap(domain, theMap.map(f))
+
+  def integrateInto(multiMap: LongRangeMultiMap)(implicit ev: A <:< AnyRef): DomainMap[T, R, A] =
+    new LongBasedDomainMap[T, R, A](domain, multiMap.integrate(theMap.asInstanceOf[LongRangeMap[AnyRef]]).asInstanceOf[LongRangeMap[A]])
 }
 
 class DomainMapBuilder[T, R, A: ClassManifest](val domain: RangeDomain[T, R]) { builder =>

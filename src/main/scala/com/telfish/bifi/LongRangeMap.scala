@@ -53,6 +53,7 @@ trait LongRangeMap[+A] {
   def ++[B >: A: ClassManifest](other: LongRangeMap[B]): LongRangeMap[B]
 
   def traverse: Traversable[(Long, Long, A)]
+  def traverseEntries: Traversable[Entry[A]]
 
   def map[B: ClassManifest](f: A => B): LongRangeMap[B]
 }
@@ -302,6 +303,9 @@ trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
   def traverse: Traversable[(Long, Long, A)] =
     (0 until cardinality).view map (i => (starts(i), ends(i), valueAt(i)))
 
+  def traverseEntries: Traversable[Entry[A]] =
+    (0 until cardinality).view map (i => Entry(starts(i), lengths(i), valueAt(i)))
+
   def map[B: ClassManifest](f: A => B): LongRangeMap[B] = new RLELongRangeMap(starts, lengths, values map f toArray)
 }
 
@@ -341,7 +345,7 @@ class Tuple2OptionRLELongRangeMap[A, B](starts: Array[Long], lengths: Array[Long
   def valueAt(i: Int): (Option[A], Option[B]) = (Option(valuesA(i)), Option(valuesB(i)))
 }
 
-case class Entry[A](start: Long, length: Long, value: A)
+case class Entry[+A](start: Long, length: Long, value: A)
 class LongRangeMapBuilder[A: ClassManifest] {
 
   var entries = new ArrayBuffer[Entry[A]]
@@ -358,6 +362,8 @@ class LongRangeMapBuilder[A: ClassManifest] {
 
     RLELongRangeMap.fromSortedEntries(sorted)
   }
+
+  def integrateInto(multiMap: LongRangeMultiMap)(implicit ev: A <:< AnyRef): LongRangeMap[A] = multiMap.integrate[AnyRef](entries.asInstanceOf[Seq[Entry[AnyRef]]]).asInstanceOf[LongRangeMap[A]]
 }
 
 object FindHelper {

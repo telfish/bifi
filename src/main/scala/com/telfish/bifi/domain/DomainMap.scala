@@ -30,6 +30,8 @@ trait DomainMap[T, R, A] {
   def ++(other: DomainMap[T, R, A]): DomainMap[T, R, A]
 
   def map[B: ClassManifest](f: A => B): DomainMap[T, R, B]
+
+  def integrateInto(multiMap: LongRangeMultiMap)(implicit ev: A <:< AnyRef): DomainMap[T, R, A]
 }
 
 

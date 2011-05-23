@@ -194,6 +194,123 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
     }
   }
 
+  "A LongRangeMultiMap" should {
+    "integrate two maps" in {
+      "non-overlapping" in {
+        val multiMap = LongRangeMultiMap.create
+
+        val map1 =
+          Builder[String]
+            .add("***                 ", "test")
+            .integrateInto(multiMap)
+
+        val map2 =
+          Builder[String]
+            .add("            ***     ", "test2")
+            .integrateInto(multiMap)
+
+        multiMap.optimize()
+
+        map1.get(0) must beSome("test")
+        map1.get(1) must beSome("test")
+        map1.get(2) must beSome("test")
+
+        map1.get(12) must beNone
+        map2.get(0) must beNone
+
+        map2.get(12) must beSome("test2")
+        map2.get(13) must beSome("test2")
+        map2.get(14) must beSome("test2")
+      }
+      "overlapping" in {
+        val multiMap = LongRangeMultiMap.create
+
+        val map1 =
+          Builder[String]
+            .add("***                 ", "test")
+            .integrateInto(multiMap)
+
+        val map2 =
+          Builder[String]
+            .add("  *****             ", "test2")
+            .add("          ***       ", "test3")
+            .integrateInto(multiMap)
+
+        multiMap.optimize()
+
+        map1.get(0) must beSome("test")
+        map1.get(1) must beSome("test")
+        map1.get(2) must beSome("test")
+
+        map1.get(12) must beNone
+        map2.get(0) must beNone
+
+        map2.get(2) must beSome("test2")
+        map2.get(3) must beSome("test2")
+        map2.get(4) must beSome("test2")
+        map2.get(5) must beSome("test2")
+        map2.get(6) must beSome("test2")
+        map2.get(7) must beNone
+
+        map2.get(10) must beSome("test3")
+        map2.get(11) must beSome("test3")
+        map2.get(12) must beSome("test3")
+      }
+    }
+    "integrate 3 maps" in {
+      val multiMap = LongRangeMultiMap.create
+
+      val map1 =
+        Builder[String]
+          .add("***                 ", "test")
+          .integrateInto(multiMap)
+
+      val map2 =
+        Builder[String]
+          .add("            ***     ", "test2")
+          .integrateInto(multiMap)
+
+      multiMap.optimize()
+
+      val map3 =
+        Builder[String]
+          .add(" **************     ", "test3")
+          .integrateInto(multiMap)
+
+      multiMap.optimize()
+      multiMap.dump
+
+      map1.get(0) must beSome("test")
+      map1.get(1) must beSome("test")
+      map1.get(2) must beSome("test")
+
+      map1.get(12) must beNone
+      map2.get(0) must beNone
+
+      map2.get(12) must beSome("test2")
+      map2.get(13) must beSome("test2")
+      map2.get(14) must beSome("test2")
+
+      map3.get(0) must beNone
+      map3.get(1) must beSome("test3")
+      map3.get(2) must beSome("test3")
+      map3.get(3) must beSome("test3")
+      map3.get(4) must beSome("test3")
+      map3.get(5) must beSome("test3")
+      map3.get(6) must beSome("test3")
+      map3.get(7) must beSome("test3")
+      map3.get(8) must beSome("test3")
+      map3.get(9) must beSome("test3")
+      map3.get(10) must beSome("test3")
+      map3.get(11) must beSome("test3")
+      map3.get(12) must beSome("test3")
+      map3.get(13) must beSome("test3")
+      map3.get(14) must beSome("test3")
+      map3.get(15) must beNone
+      map3.get(16) must beNone
+    }
+  }
+
   def Builder[A: ClassManifest]: GraphicBuilder[A] = new GraphicBuilder[A]
 
   val GraphicInterval = """([ ]*)(\**)[ ]*""".r
