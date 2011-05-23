@@ -86,9 +86,7 @@ object LongRangeMultiMapOptimizer {
 
     val mapIdxOffset = optimized.values.size
 
-    val events: Seq[Event] = Event.allEvents
-
-    val grouped = events.groupBy(Event.pos).toSeq.sortBy(_._1).map(_._2)
+    val grouped = Event.allEvents.groupBy(Event.pos).toSeq.sortBy(_._1).map(_._2)
 
     val newSize = grouped.size - 1
 
