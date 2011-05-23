@@ -2,7 +2,7 @@ package com.telfish.bifi
 
 /**
  * A LongRangeMultiMap is a map where multiple other maps can be integrated.
- * All those maps then share the start/end arrays and keep only their own value store.
+ * All those maps then share the start/end arrays and only a copy of their value store is kept.
  */
 trait LongRangeMultiMap {
   def integrate[A <: AnyRef: ClassManifest](map: LongRangeMap[A]): LongRangeMap[A]
@@ -15,7 +15,7 @@ trait LongRangeMultiMap {
 object LongRangeMultiMap {
   def create: LongRangeMultiMap = new LongRangeMultiMapImpl
 
-  class IntegrationEntry(val entries: Seq[Entry[_]])
+  class IntegrationEntry(val entries: Seq[Entry[_ <: AnyRef]])
   case class OptimizedMap(starts: Array[Long], lengths: Array[Long], values: Array[Array[AnyRef]])
 
   private[this] class LongRangeMultiMapImpl extends LongRangeMultiMap {
@@ -43,18 +43,6 @@ object LongRangeMultiMap {
       }
     }
 
-    final def slide[A <: AnyRef](xs: Seq[A])(f: (A, A) => Unit): Unit = {
-      var last: A = null.asInstanceOf[A]
-      var initialized = false
-      xs.foreach { a =>
-        if (initialized) {
-          f(last, a)
-        } else
-          initialized = true
-
-        last = a
-      }
-    }
     val createdAt = System.currentTimeMillis
     def addEntry[A](entry: IntegrationEntry)(implicit mf: ClassManifest[A]): LongRangeMap[A] = {
       val idx = curIdx
@@ -94,9 +82,11 @@ object LongRangeMultiMap {
 object LongRangeMultiMapOptimizer {
   import LongRangeMultiMap._
   def optimize(optimized: OptimizedMap, entriesToIntegrate: IndexedSeq[IntegrationEntry]): OptimizedMap = {
+    val Event = new EventMapping(optimized, entriesToIntegrate)
+
     val mapIdxOffset = optimized.values.size
 
-    val events: Seq[Event] = Event.allEvents//null//oldEvents ++ newEvents
+    val events: Seq[Event] = Event.allEvents
 
     val grouped = events.groupBy(Event.pos).toSeq.sortBy(_._1).map(_._2)
 
@@ -118,15 +108,9 @@ object LongRangeMultiMapOptimizer {
       val start = Event.pos(startEvents.head)
       val end   = Event.pos(endEvents.head)
 
-      def endBeforeStart(e: Event): Int = if (Event.start(e)) 1 else 0
+      def endBeforeStart(e: Event): Int = if (EventMapping.start(e)) 1 else 0
 
       startEvents.sortBy(endBeforeStart) foreach (e => curValues(Event.indexFor(e)) = e)
-      /*{
-        case e@NewEvent(_, _, mapIdx, _) =>
-          curValues(mapIdx + 1) = e
-        case e@OptimizedEntryEvent(_, valueIdx) =>
-          curValues(0) = e
-      }*/
 
       var created = false
       def set(mapIdx: Int, value: AnyRef) {
@@ -149,14 +133,6 @@ object LongRangeMultiMapOptimizer {
         curValues(i) match {
           case Event.UNSET =>
           case e: Event => Event.handle(e)(set)
-          /*
-          case e@OptimizedEntryEvent(_, valueIdx) =>
-            (0 until optimized.values.size) foreach { i =>
-              set(i, optimized.values(i)(valueIdx))
-            }
-          case e@NewEvent(_, start, mapIdx, valueIdx) =>
-            set(mapIdx + mapIdxOffset, if (start) entriesToIntegrate(mapIdx).entries(valueIdx).value else null)
-            */
         }
       }
     }
@@ -167,36 +143,19 @@ object LongRangeMultiMapOptimizer {
       results.map(_.toArray))
   }
 
-  // we define a mapping where we can identify each possible event
-  // by a single 32-bit integer value
-  // This integer is defined as follows:
-  //  - 8bits : mapIdx or -1 if valueIdx goes into previously OptimizedMap
-  //  - 1 bit : start
-  //  - 23bits: valueIdx
   type Event = Int
-  val mapMask = 256 << 24
-  val endMask = 1 << 23
-  val valueMask = 0xffffffff >> 9
-
-  def createEvent(mapIndex: Int, end: Boolean, valueIndex: Int): Event = {
-    val mapBits = mapIndex.toByte.toInt << 24
-    val endBits = (if (end) 1 else 0) << 23
-    val valueBits = valueIndex & valueMask
-    mapBits | endBits | valueBits
-  }
-
-  def mapIdx(e: Event): Int = (e & mapMask) >> 24
-  def start(e: Event): Boolean = (e & endMask) == 0
-  def valueIdx(e: Event): Int = e & valueMask
-
   class EventMapping(optimized: OptimizedMap, entriesToIntegrate: IndexedSeq[IntegrationEntry]) {
+    import EventMapping._
+
+    lazy val mapIdxOffset = optimized.values.size
+
     object Old {
-      def pos(e: Event): Long = optimized.starts(e)
+      def pos(e: Event): Long = optimized.starts(valueIdx(e))
       def start(e: Event): Boolean = true
       def indexFor(e: Event): Int = 0
       def handle(e: Event)(set: (Int, AnyRef) => Unit) = {
         (0 until optimized.values.size) foreach { i =>
-          set(i, optimized.values(i)(e))
+          set(i, optimized.values(i)(valueIdx(e)))
         }
       }
 
@@ -207,7 +166,8 @@ object LongRangeMultiMapOptimizer {
       val startOffsets = entriesToIntegrate.scanLeft(0)(_ + _.entries.size)
 
       def entry(e: Event): Entry[_ <: AnyRef] =
-        entriesToIntegrate(mapIdx(e)).entries(valueIdx(e))
+        entriesToIntegrate(mapIdx(e))
+          .entries(valueIdx(e))
 
       def pos(e: Event): Long = {
         val en = entry(e)
@@ -225,9 +185,9 @@ object LongRangeMultiMapOptimizer {
         for { mapIdx  <- (0 until entriesToIntegrate.size)
           iEntry    = entriesToIntegrate(mapIdx)
           valueIdx <- (0 until iEntry.entries.size)
-          end      <- List(false, true)
+          start      <- List(false, true)
         }
-          yield createEvent(mapIdx, end, valueIdx)
+          yield createEvent(mapIdx.toByte, start, valueIdx)
     }
 
     def isOld(e: Event): Boolean = mapIdx(e) == -1;
@@ -241,5 +201,41 @@ object LongRangeMultiMapOptimizer {
 
     val UNSET: Event = -1
   }
+  object EventMapping {
+    // we define a mapping where we can identify each possible event
+    // by a single 32-bit integer value
+    // This integer is defined as follows:
+    //  - 8bits : mapIdx or -1 if valueIdx goes into previously OptimizedMap
+    //  - 1 bit : start
+    //  - 23bits: valueIdx
+    val mapMask   = 255 << 24
+    val startMask = 1 << 23
+    val valueMask = startMask - 1
 
+    def createEvent(mapIndex: Byte, start: Boolean, valueIndex: Int): Event = {
+      val mapBits = (mapIndex << 24) & mapMask
+      val startBits = (if (start) 1 else 0) << 23
+      val valueBits = valueIndex & valueMask
+
+      mapBits | startBits | valueBits
+    }
+
+    def mapIdx(e: Event): Byte = ((e & mapMask) >> 24).toByte
+    def start(e: Event): Boolean = (e & startMask) != 0
+    def valueIdx(e: Event): Int = e & valueMask
+  }
+
+  // TODO: move to commons, we need this in LongRangeMap.normalize as well
+  final def slide[A <: AnyRef](xs: Seq[A])(f: (A, A) => Unit): Unit = {
+    var last: A = null.asInstanceOf[A]
+    var initialized = false
+    xs.foreach { a =>
+      if (initialized) {
+        f(last, a)
+      } else
+        initialized = true
+
+      last = a
+    }
+  }
 }

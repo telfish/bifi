@@ -5,6 +5,6 @@ import org.specs.runner.{JUnit4, JUnitSuiteRunner}
 
 @RunWith(classOf[JUnitSuiteRunner])
 class BifiJUnitSpecs extends JUnit4(
-  LongRangeMapSpecs,
+  LongRangeMapSpecs, LongRangeMultiMapSpecs,
   domain.DomainSpecs, domain.ConcreteDomainSpecs, domain.DomainMapSpecs
 )
