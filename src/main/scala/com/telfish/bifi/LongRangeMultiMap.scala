@@ -180,7 +180,7 @@ object LongRangeMultiMapOptimizer {
         }
       }
 
-      def allEvents = (0 until optimized.starts.size) map { i => createEvent(-1, false, i) }
+      def allEvents = (0 until optimized.starts.size) map { i => createEvent(-1, start = true, i) }
     }
 
     object New {
@@ -203,7 +203,7 @@ object LongRangeMultiMapOptimizer {
           valueIdx <- (0 until iEntry.size)
           start      <- List(false, true)
         }
-          yield createEvent(mapIdx.toByte, start, valueIdx)
+          yield createEvent(mapIdx.toByte, start = start, valueIdx)
     }
 
     def isOld(e: Event): Boolean = mapIdx(e) == -1;
