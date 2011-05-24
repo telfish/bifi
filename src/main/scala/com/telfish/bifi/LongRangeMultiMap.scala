@@ -36,10 +36,17 @@ object LongRangeMultiMap {
     var optimized: OptimizedMap = OptimizedMap(Array.empty, Array.empty, Array.empty)
 
     def integrate[A <: AnyRef: ClassManifest](map: LongRangeMap[A]): LongRangeMap[A] =
-      addEntry(new SimpleIntegrationEntry(map.traverseEntries.toSeq))
+      if (map.cardinality > 0)
+        addEntry(new SimpleIntegrationEntry(map.traverseEntries.toSeq))
+      else
+        map
 
     def integrate[A <: AnyRef: ClassManifest](entries: Seq[Entry[A]]): LongRangeMap[A] =
-      addEntry(new SimpleIntegrationEntry(entries.sortBy(_.start)))
+      if (entries.size > 0)
+        addEntry(new SimpleIntegrationEntry(entries.sortBy(_.start)))
+      else
+        throw new RuntimeException("Tried to integrate an empty set of entries")
+
 
     def optimize(): Unit = {
       optimized = LongRangeMultiMapOptimizer.optimize(optimized, entriesToIntegrate)
