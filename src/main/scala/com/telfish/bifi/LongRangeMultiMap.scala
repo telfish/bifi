@@ -161,8 +161,6 @@ object LongRangeMultiMapOptimizer {
     }
 
     object New {
-      val startOffsets = entriesToIntegrate.scanLeft(0)(_ + _.entries.size)
-
       def entry(e: Event): Entry[_ <: AnyRef] =
         entriesToIntegrate(mapIdx(e))
           .entries(valueIdx(e))
