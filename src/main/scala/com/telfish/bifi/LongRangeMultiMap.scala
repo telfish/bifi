@@ -9,7 +9,7 @@ trait LongRangeMultiMap {
   def integrate[A <: AnyRef: ClassManifest](entries: Seq[Entry[A]]): LongRangeMap[A]
 
   def optimize()
-  def dump
+  def dump: String
 }
 
 object LongRangeMultiMap {
@@ -46,13 +46,17 @@ object LongRangeMultiMap {
       entriesToIntegrate.clear
     }
 
-    def dump = {
-      (0 until optimized.starts.size) foreach { i =>
-        val start  = optimized.starts(i)
-        val length = optimized.lengths(i)
-        val values = optimized.values map (_(i))
-        println("%5d %5d %s" format (start, length , values mkString " "))
-      }
+    def dump: String = {
+      val res =
+        (0 until optimized.starts.size) map { i =>
+          val start  = optimized.starts(i)
+          val length = optimized.lengths(i)
+          val values = optimized.values map (_(i))
+          "%5d %5d %s" format (start, length , values mkString " ")
+        } mkString "\n"
+
+      println(res)
+      res
     }
 
     val createdAt = System.currentTimeMillis
