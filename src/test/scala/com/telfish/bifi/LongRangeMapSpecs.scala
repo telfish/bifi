@@ -197,7 +197,7 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
   "A LongRangeMultiMap" should {
     "integrate two maps" in {
       "non-overlapping" in {
-        val multiMap = LongRangeMultiMap.create
+        val multiMap = LongRangeMultiMap.create("2-map")
 
         val map1 =
           Builder[String]
@@ -223,7 +223,7 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
         map2.get(14) must beSome("test2")
       }
       "overlapping" in {
-        val multiMap = LongRangeMultiMap.create
+        val multiMap = LongRangeMultiMap.create("overlapping")
 
         val map1 =
           Builder[String]
@@ -258,7 +258,7 @@ object LongRangeMapSpecs extends Specification with ScalaCheck {
       }
     }
     "integrate 3 maps" in {
-      val multiMap = LongRangeMultiMap.create
+      val multiMap = LongRangeMultiMap.create("3-map")
 
       val map1 =
         Builder[String]

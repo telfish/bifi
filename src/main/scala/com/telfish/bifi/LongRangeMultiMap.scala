@@ -13,7 +13,7 @@ trait LongRangeMultiMap {
 }
 
 object LongRangeMultiMap {
-  def create: LongRangeMultiMap = new LongRangeMultiMapImpl
+  def create(tag: String = "<unnamed>"): LongRangeMultiMap = new LongRangeMultiMapImpl(tag)
 
   trait IntegrationEntry {
     def start(i: Int): Long
@@ -30,7 +30,7 @@ object LongRangeMultiMap {
   }
   case class OptimizedMap(starts: Array[Long], lengths: Array[Long], values: Array[Array[AnyRef]])
 
-  private[this] class LongRangeMultiMapImpl extends LongRangeMultiMap {
+  private[this] class LongRangeMultiMapImpl(val tag: String) extends LongRangeMultiMap {
     var curIdx = 0
     val entriesToIntegrate = new collection.mutable.ArrayBuffer[IntegrationEntry]
     var optimized: OptimizedMap = OptimizedMap(Array.empty, Array.empty, Array.empty)
