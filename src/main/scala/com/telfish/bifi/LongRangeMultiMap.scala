@@ -15,7 +15,19 @@ trait LongRangeMultiMap {
 object LongRangeMultiMap {
   def create: LongRangeMultiMap = new LongRangeMultiMapImpl
 
-  class IntegrationEntry(val entries: Seq[Entry[_ <: AnyRef]])
+  trait IntegrationEntry {
+    def start(i: Int): Long
+    def length(i: Int): Long
+    def value(i: Int): AnyRef
+    def size: Int
+  }
+  case class SimpleIntegrationEntry(entries: Seq[Entry[_ <: AnyRef]]) extends IntegrationEntry {
+    def start(i: Int): Long = entries(i).start
+    def length(i: Int): Long = entries(i).length
+    def value(i: Int): AnyRef = entries(i).value
+
+    def size: Int = entries.size
+  }
   case class OptimizedMap(starts: Array[Long], lengths: Array[Long], values: Array[Array[AnyRef]])
 
   private[this] class LongRangeMultiMapImpl extends LongRangeMultiMap {
@@ -24,10 +36,10 @@ object LongRangeMultiMap {
     var optimized: OptimizedMap = OptimizedMap(Array.empty, Array.empty, Array.empty)
 
     def integrate[A <: AnyRef: ClassManifest](map: LongRangeMap[A]): LongRangeMap[A] =
-      addEntry(new IntegrationEntry(map.traverseEntries.toSeq))
+      addEntry(new SimpleIntegrationEntry(map.traverseEntries.toSeq))
 
     def integrate[A <: AnyRef: ClassManifest](entries: Seq[Entry[A]]): LongRangeMap[A] =
-      addEntry(new IntegrationEntry(entries.sortBy(_.start)))
+      addEntry(new SimpleIntegrationEntry(entries.sortBy(_.start)))
 
     def optimize(): Unit = {
       optimized = LongRangeMultiMapOptimizer.optimize(optimized, entriesToIntegrate)
@@ -161,26 +173,23 @@ object LongRangeMultiMapOptimizer {
     }
 
     object New {
-      def entry(e: Event): Entry[_ <: AnyRef] =
-        entriesToIntegrate(mapIdx(e))
-          .entries(valueIdx(e))
-
       def pos(e: Event): Long = {
-        val en = entry(e)
+        val iEntry = entriesToIntegrate(mapIdx(e))
+        val startV = iEntry.start(valueIdx(e))
         if (start(e))
-          en.start
+          startV
         else
-          en.start + en.length
+          startV + iEntry.length(valueIdx(e))
       }
 
       def indexFor(e: Event): Int = 1 + mapIdx(e)
       def handle(e: Event)(set: (Int, AnyRef) => Unit): Unit =
-        set(mapIdx(e) + mapIdxOffset, if (start(e)) entry(e).value else null)
+        set(mapIdx(e) + mapIdxOffset, if (start(e)) entriesToIntegrate(mapIdx(e)).value(valueIdx(e)) else null)
 
       def allEvents =
         for { mapIdx  <- (0 until entriesToIntegrate.size)
           iEntry    = entriesToIntegrate(mapIdx)
-          valueIdx <- (0 until iEntry.entries.size)
+          valueIdx <- (0 until iEntry.size)
           start      <- List(false, true)
         }
           yield createEvent(mapIdx.toByte, start, valueIdx)
