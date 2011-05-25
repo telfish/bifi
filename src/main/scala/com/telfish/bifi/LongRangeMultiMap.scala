@@ -3,6 +3,7 @@ package com.telfish.bifi
 /**
  * A LongRangeMultiMap is a map where multiple other maps can be integrated.
  * All those maps then share the start/end arrays and only a copy of their value store is kept.
+ * A LongRangeMultiMap is not necessarily reentrant.
  */
 trait LongRangeMultiMap {
   def integrate[A <: AnyRef: ClassManifest](map: LongRangeMap[A]): LongRangeMap[A]
