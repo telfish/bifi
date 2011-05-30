@@ -44,6 +44,7 @@ trait LongRangeMap[+A] {
   def overlaps: List[(Long, Long, List[A])]
 
   protected[bifi] def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)]
+  protected[bifi] def normalizeWithRange[B](merge: (Long, Long, List[A]) => B): Traversable[(Long, Long, B)]
 
   /**
    * Similar to ×. Returns a long range map where
@@ -115,17 +116,19 @@ trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
   def overlaps: List[(Long, Long, List[A])] =
     normalize(identity).filter(_._3.size > 1).toList
 
+  def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)] =
+    normalizeWithRange((start, end, list) => merge(list))
   /**
    * In a LongRangeMap with overlapping ranges, consolidate
    * double definitions with a merge function.
    */
-  def normalize[B](merge: List[A] => B): Traversable[(Long, Long, B)] = new Traversable[(Long, Long, B)] {
+  def normalizeWithRange[B](merge: (Long, Long, List[A]) => B): Traversable[(Long, Long, B)] = new Traversable[(Long, Long, B)] {
     def foreach[U](f: ((Long, Long, B)) => U) {
-      def add(start: Long, end: Long, value: B): Unit = {
+      def add(start: Long, end: Long, values: List[A]): Unit = {
         assert(start <= end)
 
         if (start < end)
-          f((start, end, value))
+          f((start, end, merge(start, end, values)))
       }
 
       tick("In normalize.foreach")
@@ -167,20 +170,20 @@ trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
             val active = overlappingIdxs filter (idx => (starts(idx) <= start) && (ends(idx) >= end))
             assert (active.size > 0)
 
-            add(math.max(curEnd, start), end, merge(active map valueAt toList))
+            add(math.max(curEnd, start), end, active map valueAt toList)
           }
 
           i = ends.indexWhere(_ > thisEnd, i + 1) foundOrElse size
         }
         else {
-          add(starts(i), ends(i), merge(List(valueAt(i))))
+          add(starts(i), ends(i), List(valueAt(i)))
           i += 1
         }
         curEnd = thisEnd
       }
 
       if (i < size)
-        add(math.max(curEnd, starts(i)), ends(i), merge(List(valueAt(i))))
+        add(math.max(curEnd, starts(i)), ends(i), List(valueAt(i)))
 
       tick("After normalize.foreach")
     }

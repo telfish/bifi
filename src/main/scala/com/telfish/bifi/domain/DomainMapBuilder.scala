@@ -27,8 +27,16 @@ class LongBasedDomainMap[T, R, A: ClassManifest](val domain: RangeDomain[T, R], 
     case _ => throw new UnsupportedOperationException("++ not supported with DomainMaps other than LongBasedDomainMaps")
   }
 
-  def normalize[B: ClassManifest](merge: (List[A]) => B): DomainMap[T, R, B] = {
+  def normalize[B: ClassManifest](merge: List[A] => B): DomainMap[T, R, B] = {
     val normalized = theMap.normalize(merge) map {
+      case (s, e, v) => Entry[B](s, e - s, v)
+    }
+    new LongBasedDomainMap(domain, RLELongRangeMap.fromSortedEntries[B](normalized.toIterable))
+  }
+  def normalizeWithRange[B: ClassManifest](merge: (() => List[R], List[A]) => B): DomainMap[T, R, B] = {
+    val normalized = theMap.normalizeWithRange { (start, end, list) =>
+      merge(() => domain.rangeify(start, end + 1), list)
+    } map {
       case (s, e, v) => Entry[B](s, e - s, v)
     }
     new LongBasedDomainMap(domain, RLELongRangeMap.fromSortedEntries[B](normalized.toIterable))
