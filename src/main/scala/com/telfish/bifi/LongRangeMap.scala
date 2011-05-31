@@ -84,7 +84,7 @@ trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
 
       if (insertPoint == 0) // there is no entry before the entry in question
         None
-      else if (l - starts(insertPoint - 1) < lengths(insertPoint -1))
+      else if (l < ends(insertPoint - 1))
         Some(insertPoint - 1)
       else
         None
