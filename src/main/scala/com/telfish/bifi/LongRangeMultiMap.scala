@@ -9,7 +9,11 @@ trait LongRangeMultiMap {
   def integrate[A <: AnyRef: ClassManifest](map: LongRangeMap[A]): LongRangeMap[A]
   def integrate[A <: AnyRef: ClassManifest](entries: Seq[Entry[A]]): LongRangeMap[A]
 
-  def optimize()
+  /**
+   * Optimizes this MultiMap and returns an 'immutable' MultiMap where new entries
+   * won't be integrated but instead are just returned.
+   */
+  def optimize(): LongRangeMultiMap
   def dump: String
 }
 
@@ -49,9 +53,19 @@ object LongRangeMultiMap {
         throw new RuntimeException("Tried to integrate an empty set of entries")
 
 
-    def optimize(): Unit = {
+    def optimize(): LongRangeMultiMap = {
       optimized = LongRangeMultiMapOptimizer.optimize(optimized, entriesToIntegrate)
       entriesToIntegrate.clear
+      val that = this
+
+      new LongRangeMultiMap {
+        def integrate[A <: AnyRef : ClassManifest](map: LongRangeMap[A]): LongRangeMap[A] = map
+        def integrate[A <: AnyRef : ClassManifest](entries: Seq[Entry[A]]): LongRangeMap[A] =
+          RLELongRangeMap.fromSortedEntries(entries.sortBy(_.start))
+
+        def optimize(): LongRangeMultiMap = this
+        def dump: String = that.dump
+      }
     }
 
     def dump: String = {
