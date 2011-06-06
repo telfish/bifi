@@ -3,6 +3,7 @@ package com.telfish.bifi
 import java.util.Arrays
 import collection.mutable.{ListBuffer, ArrayBuffer}
 import annotation.elidable
+import java.lang.IllegalStateException
 
 object Output {
   var last: Long = -1
@@ -27,6 +28,11 @@ trait LongRangeMap[+A] {
    * Gets the value associated with a long value
    */
   def get(l: Long): Option[A]
+
+  type Token = Int
+  def getToken(l: Long): Token
+  def isDefinedAtToken(token: Token): Boolean
+  def getByToken(token: Token): A
 
   /**
    * The number of ranges in this map
@@ -74,25 +80,32 @@ trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
     def apply(idx: Int): Long = starts(idx) + lengths(idx)
   }
 
-  def indexAt(l: Long): Option[Int] = {
+  def get(l: Long): Option[A] = {
+    val token = getToken(l)
+    if (isDefinedAtToken(token))
+      Some(getByToken(token))
+    else
+      None
+  }
+
+  def getToken(l: Long): Token = {
     val index = Arrays.binarySearch(starts, l)
 
     if (index >= 0)
-      Some(index)
+      index
     else {
       val insertPoint = - index - 1
 
       if (insertPoint == 0) // there is no entry before the entry in question
-        None
+        -1
       else if (l < ends(insertPoint - 1))
-        Some(insertPoint - 1)
+        insertPoint - 1
       else
-        None
+        -1
     }
   }
-
-  def get(l: Long): Option[A] =
-    indexAt(l).map(valueAt)
+  def isDefinedAtToken(token: Token): Boolean = token != -1
+  def getByToken(token: Token): A = valueAt(token)
 
   def gaps(end: Long): List[(Long, Long)] = {
     val buffer = new ListBuffer[(Long, Long)]
