@@ -33,12 +33,15 @@ object LongRangeMultiMap {
 
     def size: Int = entries.size
   }
-  case class OptimizedMap(starts: Array[Long], lengths: Array[Long], values: Array[Array[AnyRef]])
+  case class OptimizedMap(starts: Array[Long], lengths: Array[Long], size: Int, values: Array[AnyRef]) {
+    def valueAt(mapIdx: Int, pos: Int): AnyRef =
+      values(size * pos + mapIdx)
+  }
 
   private[this] class LongRangeMultiMapImpl(val tag: String) extends LongRangeMultiMap {
     var curIdx = 0
     val entriesToIntegrate = new collection.mutable.ArrayBuffer[IntegrationEntry]
-    var optimized: OptimizedMap = OptimizedMap(Array.empty, Array.empty, Array.empty)
+    var optimized: OptimizedMap = OptimizedMap(Array.empty, Array.empty, 0, Array.empty)
 
     def integrate[A <: AnyRef: ClassManifest](map: LongRangeMap[A]): LongRangeMap[A] =
       if (map.cardinality > 0)
@@ -73,7 +76,7 @@ object LongRangeMultiMap {
         (0 until optimized.starts.size) map { i =>
           val start  = optimized.starts(i)
           val length = optimized.lengths(i)
-          val values = optimized.values map (_(i))
+          val values = (0 until optimized.size) map (j => optimized.valueAt(j, i))
           "%5d %5d %s" format (start, length , values mkString " ")
         } mkString "\n"
 
@@ -105,7 +108,7 @@ object LongRangeMultiMap {
         def starts: Array[Long] = optimized.starts
         protected def lengths: Array[Long] = optimized.lengths
 
-        def valueAt(i: Int): A = optimized.values(idx)(i).asInstanceOf[A]
+        def valueAt(i: Int): A = optimized.valueAt(idx, i).asInstanceOf[A]
 
         override def isDefinedAtToken(token: Token): Boolean =
           token != -1 && valueAt(token) != null
@@ -125,7 +128,7 @@ object LongRangeMultiMapOptimizer {
   def optimize(optimized: OptimizedMap, entriesToIntegrate: IndexedSeq[IntegrationEntry]): OptimizedMap = {
     val Event = new EventMapping(optimized, entriesToIntegrate)
 
-    val mapIdxOffset = optimized.values.size
+    val mapIdxOffset = optimized.size
 
     val grouped = Event.allEvents.groupBy(Event.pos).toSeq.sortBy(_._1).map(_._2)
 
@@ -137,7 +140,7 @@ object LongRangeMultiMapOptimizer {
     val starts = new ArrayBuffer[Long](newSize)
     val lengths = new ArrayBuffer[Long](newSize)
 
-    val results: Array[ArrayBuffer[AnyRef]] = (0 until n).map(_ => new ArrayBuffer[AnyRef](newSize)).toArray
+    val results: ArrayBuffer[AnyRef] = new ArrayBuffer[AnyRef](entriesToIntegrate.head.size)
 
     // the running state, collects information which of the results entries is at which state
     val curValues = Array.fill[Event](1 + entriesToIntegrate.size)(Event.UNSET)
@@ -159,12 +162,12 @@ object LongRangeMultiMapOptimizer {
 
             starts  += start
             lengths += (end - start)
-            results.foreach(_ += null)
+            (0 until n) foreach (_ => results += null)
 
             cur += 1
           }
 
-          results(mapIdx)(cur) = value
+          results(n * cur + mapIdx) = value
         }
       }
 
@@ -179,22 +182,23 @@ object LongRangeMultiMapOptimizer {
     OptimizedMap(
       starts.toArray,
       lengths.toArray,
-      results.map(_.toArray))
+      n,
+      results.toArray)
   }
 
   type Event = Int
   class EventMapping(optimized: OptimizedMap, entriesToIntegrate: IndexedSeq[IntegrationEntry]) {
     import EventMapping._
 
-    lazy val mapIdxOffset = optimized.values.size
+    lazy val mapIdxOffset = optimized.size
 
     object Old {
       def pos(e: Event): Long = optimized.starts(valueIdx(e))
       def start(e: Event): Boolean = true
       def indexFor(e: Event): Int = 0
       def handle(e: Event)(set: (Int, AnyRef) => Unit) = {
-        (0 until optimized.values.size) foreach { i =>
-          set(i, optimized.values(i)(valueIdx(e)))
+        (0 until optimized.size) foreach { i =>
+          set(i, optimized.valueAt(i, valueIdx(e)))
         }
       }
 
