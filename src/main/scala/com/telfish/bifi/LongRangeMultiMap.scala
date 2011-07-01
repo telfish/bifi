@@ -1,5 +1,8 @@
 package com.telfish.bifi
 
+import collection.mutable.ArrayBuffer
+import java.lang.{IllegalStateException, RuntimeException}
+
 /**
  * A LongRangeMultiMap is a map where multiple other maps can be integrated.
  * All those maps then share the start/end arrays and only a copy of their value store is kept.
@@ -23,6 +26,7 @@ object LongRangeMultiMap {
   trait IntegrationEntry {
     def start(i: Int): Long
     def length(i: Int): Long
+    def end(i: Int): Long = start(i) + length(i)
     def value(i: Int): AnyRef
     def size: Int
   }
@@ -57,7 +61,7 @@ object LongRangeMultiMap {
 
 
     def optimize(): LongRangeMultiMap = {
-      optimized = LongRangeMultiMapOptimizer.optimize(optimized, entriesToIntegrate)
+      optimized = LongRangeMultiMapOptimizer.fastOptimize(optimized, entriesToIntegrate)
       entriesToIntegrate.clear
       val that = this
 
@@ -125,6 +129,88 @@ object LongRangeMultiMap {
 
 object LongRangeMultiMapOptimizer {
   import LongRangeMultiMap._
+
+  def fastOptimize(optimized: OptimizedMap, entriesToIntegrate: IndexedSeq[IntegrationEntry]): OptimizedMap = {
+    assert(optimized.size == 0)
+    val n = entriesToIntegrate.size
+
+    val sizeGuess = entriesToIntegrate.map(_.size).max
+
+    val starts = new ArrayBuffer[Long](sizeGuess)
+    val lengths = new ArrayBuffer[Long](sizeGuess)
+
+    val results: ArrayBuffer[AnyRef] = new ArrayBuffer[AnyRef](entriesToIntegrate.size * sizeGuess)
+
+    // since all lists are already sorted we go through each lists in parallel
+
+    val curIdx = new Array[Int](n)
+    val isActive = new Array[Boolean](n)
+
+    val MAX = Integer.MAX_VALUE
+
+    var curStart = - 1L
+    while (true) {
+      // building the map works by running in a loop composed of several steps:
+      // 1. get next event index
+      // 2. create a new entry if necessary
+      // 3. adjust curValues, isActive, curIdx
+      // 4. set curStart
+      // 5. loop
+
+      // 1.
+      // find next index where we have to do something
+      // this is: the next start of an entry or the next end
+      val curEnd = {
+        var cur = java.lang.Long.MAX_VALUE
+        (0 until n) foreach { i =>
+          val j = curIdx(i)
+          if (j != MAX)
+            if (isActive(i))
+              cur = math.min(cur, entriesToIntegrate(i).end(j))
+            else
+              cur = math.min(cur, entriesToIntegrate(i).start(j))
+        }
+        cur
+      }
+
+      if (curEnd == java.lang.Long.MAX_VALUE) {
+        // we are finished
+        return OptimizedMap(starts.toArray, lengths.toArray, n, results.toArray)
+      }
+
+      // 2.
+      if ((curStart != -1L) && isActive.exists(identity)) {
+        (0 until n) foreach { i =>
+          val j = curIdx(i)
+
+          results += (if (j != MAX && isActive(i)) entriesToIntegrate(i).value(j) else null)
+        }
+        starts += curStart
+        lengths += (curEnd - curStart)
+      }
+
+      // 3.
+      (0 until n) foreach { i =>
+        val j = curIdx(i)
+        if (j != MAX) {
+          if (isActive(i) && curEnd == entriesToIntegrate(i).end(j)) {
+            isActive(i) = false
+            curIdx(i) = if (j + 1 < entriesToIntegrate(i).size) j + 1 else MAX
+          }
+          else if (!isActive(i) && curEnd == entriesToIntegrate(i).start(j))
+            isActive(i) = true
+        }
+      }
+
+      // 4.
+      curStart = curEnd
+
+      // 5.
+    }
+
+    throw new IllegalStateException("Shouldn't get here")
+  }
+
   def optimize(optimized: OptimizedMap, entriesToIntegrate: IndexedSeq[IntegrationEntry]): OptimizedMap = {
     val Event = new EventMapping(optimized, entriesToIntegrate)
 
