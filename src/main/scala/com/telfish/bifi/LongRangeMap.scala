@@ -183,7 +183,8 @@ trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
             val active = overlappingIdxs filter (idx => (starts(idx) <= start) && (ends(idx) >= end))
             assert (active.size > 0)
 
-            add(math.max(curEnd, start), end, active map valueAt toList)
+            if (end > curEnd)
+              add(math.max(curEnd, start), end, active map valueAt toList)
           }
 
           i = ends.indexWhere(_ > thisEnd, i + 1) foundOrElse size
