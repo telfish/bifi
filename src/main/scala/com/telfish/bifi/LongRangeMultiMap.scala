@@ -107,6 +107,9 @@ object LongRangeMultiMap {
 
         def valueAt(i: Int): A = optimized.values(idx)(i).asInstanceOf[A]
 
+        override def isDefinedAtToken(token: Token): Boolean =
+          token != -1 && valueAt(token) != null
+
         override def get(l: Long): Option[A] = {
           val res = super.get(l)
             val filtered = res.filter(_ != null)
