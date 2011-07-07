@@ -35,4 +35,8 @@ trait DomainMap[T, R, A] {
   def integrateInto(multiMap: LongRangeMultiMap)(implicit ev: A <:< AnyRef): DomainMap[T, R, A]
 }
 
+object DomainMap {
+  def empty[T, R, A](domain: RangeDomain[T, R]) = new LongBasedDomainMap(domain, LongRangeMap.empty[A])
+}
+
 

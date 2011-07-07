@@ -65,6 +65,10 @@ trait LongRangeMap[+A] {
   def map[B: ClassManifest](f: A => B): LongRangeMap[B]
 }
 
+object LongRangeMap {
+  def empty[A] = EmptyLongRangeMap
+}
+
 trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
   def valueAt(i: Int): A
   def starts: Array[Long]
@@ -273,6 +277,7 @@ trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
   }
 
   def ++[B >: A: ClassManifest](other: LongRangeMap[B]): LongRangeMap[B] = other match {
+    case EmptyLongRangeMap => this
     case other: GenericRLELongRangeMap[_] =>
 
       val newSize = starts.length + other.starts.length
@@ -362,6 +367,28 @@ class Tuple2OptionRLELongRangeMap[A, B](starts: Array[Long], lengths: Array[Long
   def valueAt(i: Int): (Option[A], Option[B]) = (Option(valuesA(i)), Option(valuesB(i)))
 }
 
+object EmptyLongRangeMap extends LongRangeMap[Nothing] {
+  def map[B: ClassManifest](f: (Nothing) => B): LongRangeMap[B] = this
+  def traverseEntries: Traversable[Entry[Nothing]] = Traversable.empty
+  def traverse: Traversable[(Long, Long, Nothing)] = Traversable.empty
+  def ++[B >: Nothing : ClassManifest](other: LongRangeMap[B]): LongRangeMap[B] = other
+  def |[B: ClassManifest](other: LongRangeMap[B]): Traversable[(Long, Long, (Option[Nothing], Option[B]))] = Traversable.empty
+
+  protected[bifi] def normalizeWithRange[B](merge: (Long, Long, List[Nothing]) => B): Traversable[(Long, Long, B)] =
+    Traversable.empty
+  protected[bifi] def normalize[B](merge: (List[Nothing]) => B): Traversable[(Long, Long, B)] =
+    Traversable.empty
+
+  def overlaps: List[(Long, Long, List[Nothing])] = Nil
+  def gaps(end: Long): List[(Long, Long)] = Nil
+  def cardinality: Int = 0
+
+  def getByToken(token: EmptyLongRangeMap.Token): Nothing = throw new IllegalStateException("Empty Long Range map")
+  def isDefinedAtToken(token: EmptyLongRangeMap.Token): Boolean = false
+  def getToken(l: Long): EmptyLongRangeMap.Token = throw new IllegalStateException("Empty Long Range map")
+  def get(l: Long): Option[Nothing] = None
+}
+
 case class Entry[+A](start: Long, length: Long, value: A)
 class LongRangeMapBuilder[A: ClassManifest] {
 
@@ -375,9 +402,13 @@ class LongRangeMapBuilder[A: ClassManifest] {
   }
 
   def toLongRangeMap: LongRangeMap[A] = {
-    val sorted = entries.sortBy(_.start)
+    if (entries.isEmpty)
+      EmptyLongRangeMap
+    else {
+      val sorted = entries.sortBy(_.start)
 
-    RLELongRangeMap.fromSortedEntries(sorted)
+      RLELongRangeMap.fromSortedEntries(sorted)
+    }
   }
 
   def integrateInto(multiMap: LongRangeMultiMap)(implicit ev: A <:< AnyRef): LongRangeMap[A] = multiMap.integrate[AnyRef](entries.asInstanceOf[Seq[Entry[AnyRef]]]).asInstanceOf[LongRangeMap[A]]
