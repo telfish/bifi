@@ -210,6 +210,7 @@ trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
   def cardinality: Int = size
 
   def |[B: ClassManifest](other: LongRangeMap[B]): Traversable[(Long, Long, (Option[A], Option[B]))] = other match {
+    case EmptyLongRangeMap => traverse.map(x => x.copy(_3 = (Some(x._3), None)))
     case other: GenericRLELongRangeMap[_] =>
       // the strategy here is:
       // 1.) simply merge both maps
@@ -319,7 +320,7 @@ trait GenericRLELongRangeMap[A] extends LongRangeMap[A]{
       tick("After merging")
 
       new RLELongRangeMap(mergedStarts, mergedLengths, mergedValues)
-    case _ => throw new UnsupportedOperationException("| only supported with other RLELongRangeMaps")
+    case _ => throw new UnsupportedOperationException("++ only supported with other RLELongRangeMaps")
   }
 
   def traverse: Traversable[(Long, Long, A)] =
